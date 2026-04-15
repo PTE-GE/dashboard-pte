@@ -42,8 +42,6 @@ th:hover{background:var(--sec)}td{padding:4px;border-bottom:1px solid #e2e8f0;ve
 .toast{position:fixed;bottom:16px;right:16px;z-index:2000;padding:8px 18px;border-radius:8px;color:#fff;font-weight:600;font-size:.82rem;box-shadow:0 3px 14px rgba(0,0,0,.2);transform:translateY(70px);opacity:0;transition:.4s}
 .toast.sh{transform:translateY(0);opacity:1}.toast.ok{background:#27ae60}.toast.nf{background:#2d6a9f}.toast.wr{background:#e67e22}
 .pulse{animation:pulse 1.5s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.src-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-top:8px;font-size:.78rem}
-.src-box label{font-weight:600;color:var(--pri)}.src-box input[type=text]{width:100%;margin-top:4px}
 .src-indicator{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;padding:2px 8px;border-radius:10px;font-weight:600}
 .src-live{background:#d4edda;color:#155724}.src-file{background:#fff3cd;color:#856404}.src-none{background:#f8d7da;color:#721c24}
 .hdr-select{padding:4px 8px;border:1px solid rgba(255,255,255,.35);border-radius:6px;font-size:.78rem;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-weight:600;max-width:220px}
@@ -124,7 +122,6 @@ th:hover{background:var(--sec)}td{padding:4px;border-bottom:1px solid #e2e8f0;ve
 <button class="tab" onclick="sw('rank',this)">🏆 Classement</button>
 <button class="tab" onclick="sw('plan',this)">📅 Phasage</button>
 <button class="tab" onclick="sw('mapPnl',this)">🗺️ Carte</button>
-<button class="tab" onclick="sw('src',this)">🔗 Source</button>
 <button class="tab" onclick="sw('manual',this)">📘 Manuel</button>
 </div>
 <div style="display:flex;align-items:center;gap:6px">
@@ -156,15 +153,15 @@ th:hover{background:var(--sec)}td{padding:4px;border-bottom:1px solid #e2e8f0;ve
 </div></div>
 </div>
 <div class="cd">
-<div class="wt" onclick="tglDist()"><h3 style="margin:0;border:none;padding:0">📊 Distribution des scores &amp; 🥧 Répartition par phase</h3><span class="ch op" id="distCh">▼</span></div>
-<div class="wb op" id="distB"><div style="padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div class="wt" onclick="tglDist()"><h3 style="margin:0;border:none;padding:0">📊 Distribution des scores &amp; 🥧 Répartition par phase</h3><span class="ch" id="distCh">▼</span></div>
+<div class="wb" id="distB"><div style="padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
 <div class="cd"><h3>📊 Distribution des scores</h3><div id="gHist" style="height:210px"></div></div>
 <div class="cd"><h3>🥧 Répartition par phase</h3><div id="gPie" style="height:210px"></div></div>
 </div></div>
 </div>
 <div class="cd">
-<div class="wt" onclick="tglQW()"><h3 style="margin:0;border:none;padding:0">🎯 Quick wins</h3><span class="ch op" id="qwCh">▼</span></div>
-<div class="wb op" id="qwB"><div style="padding-top:8px">
+<div class="wt" onclick="tglQW()"><h3 style="margin:0;border:none;padding:0">🎯 Quick wins</h3><span class="ch" id="qwCh">▼</span></div>
+<div class="wb" id="qwB"><div style="padding-top:8px">
 <div class="fb">
 <select id="dPat" onchange="ren()"><option value="all">Tout patrimoine</option><option value="prot">🏛️ Protégés uniquement</option><option value="nprot">Non protégés uniquement</option></select>
 </div>
@@ -192,7 +189,7 @@ th:hover{background:var(--sec)}td{padding:4px;border-bottom:1px solid #e2e8f0;ve
 <input type="text" id="fSe" placeholder="🔍 Rechercher…" oninput="renR();renM()">
 </div>
 <div style="overflow:auto;max-height:72vh">
-<table><thead><tr><th>#</th><th>N°</th><th>Site</th><th>Patrimoine</th><th>Score</th><th>Phase</th><th>Vétusté</th><th>SRE</th><th>IDC</th><th>Chauffage</th><th>Subst.</th><th>CECB+</th><th>Invest</th><th>Prêt?</th></tr></thead><tbody id="rB"></tbody></table>
+<table><thead><tr><th>#</th><th>N°</th><th>Site</th><th>Patrimoine</th><th>Score</th><th>Phase</th><th>Vétusté</th><th>SRE</th><th>IDC</th><th style="padding:0 2px;width:14px;text-align:center;font-size:.6rem">→</th><th>IDC proj.</th><th>Chauffage</th><th>Subst.</th><th>CECB+</th><th>Invest</th><th>Prêt?</th></tr></thead><tbody id="rB"></tbody></table>
 </div>
 </div>
 </div>
@@ -223,52 +220,6 @@ th:hover{background:var(--sec)}td{padding:4px;border-bottom:1px solid #e2e8f0;ve
 </div>
 <div id="leafMap" style="height:540px;border-radius:8px;border:1px solid #e2e8f0;background:#dde6f0"></div>
 <div id="mapWarn" style="font-size:.7rem;color:#e67e22;margin-top:4px"></div>
-</div>
-</div>
-
-<!-- ===== SOURCE ===== -->
-<div id="src" class="pnl">
-<div class="cd">
-<h3>🔗 Source de données</h3>
-<p style="font-size:.8rem;margin-bottom:10px">Configurez ici la source de données.</p>
-<div class="src-box">
-<label>📂 Mode Fichier local (import manuel)</label>
-<p style="font-size:.73rem;color:#666;margin:4px 0">Importez un fichier Excel (.xlsx) ou CSV via le bouton « Importer ».</p>
-<div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-<button class="bt bt-i bt-s" onclick="$('fIn').click()">📂 Importer fichier</button>
-<button class="bt bt-w bt-s" onclick="refreshData()">🔄 Rafraîchir</button>
-<button class="bt bt-g bt-s" onclick="exportGeoCSV()">🌍 Export géocodé</button>
-<span id="lastFileInfo" style="font-size:.72rem;color:#888">Aucun fichier importé</span>
-</div>
-</div>
-<div class="src-box" style="margin-top:10px">
-<label>🌐 Mode URL (rechargement auto)</label>
-<input type="text" id="srcUrl" placeholder="https://monserveur/partage/PTE_base.csv" style="padding:5px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:.78rem;margin-top:4px">
-<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">
-<label style="font-size:.73rem">⏱ Intervalle :</label>
-<select id="srcInterval" style="padding:3px 6px;border:1px solid #cbd5e0;border-radius:6px;font-size:.73rem">
-<option value="0">Manuel</option><option value="30" selected="">30s</option><option value="60">1min</option><option value="300">5min</option>
-</select>
-<button class="bt bt-i bt-s" onclick="startUrlMode()">▶ Activer</button>
-<button class="bt bt-s" style="background:#e74c3c;color:#fff" onclick="stopUrlMode()">⏹ Stop</button>
-<span id="urlStatus" style="font-size:.72rem;color:#888"></span>
-</div>
-</div>
-<div class="src-box" style="margin-top:10px;background:#eaf7ed;border-color:#b7e4c7">
-<label>🌍 Colonnes GPS reconnues</label>
-<p style="font-size:.73rem;color:#555;margin:4px 0">L'outil détecte automatiquement les colonnes de coordonnées dans votre fichier. Noms reconnus :</p>
-<p style="font-size:.72rem;color:#1e3a5f;font-family:monospace;margin:6px 0;background:#fff;padding:6px 10px;border-radius:4px"><b>Latitude</b> · Lat · GPS_Lat · Y · YCOOR &nbsp;⟷&nbsp; <b>Longitude</b> · Lng · Long · GPS_Lng · X · XCOOR</p>
-<p style="font-size:.73rem;color:#555;margin:4px 0">➡️ Utilisez le bouton <b>📥 Export</b> pour générer un fichier avec ces colonnes pré-remplies.</p>
-</div>
-<div class="src-box" style="margin-top:10px">
-<label>📊 État actuel</label>
-<div style="margin-top:6px;font-size:.73rem" id="srcStatus">
-<p>Sites chargés : <b id="srcCount">0</b> · Colonnes détectées : <b id="srcCols">—</b></p>
-<p>Dernière mise à jour : <b id="srcTime">—</b></p>
-<p>Source : <b id="srcType">Échantillon intégré</b></p>
-<p>Géocodage : <b id="srcGeoInfo">—</b></p>
-</div>
-</div>
 </div>
 </div>
 
@@ -378,7 +329,7 @@ th:hover{background:var(--sec)}td{padding:4px;border-bottom:1px solid #e2e8f0;ve
 </div>
 
 <script>
-let S=[], W={c:35,o:25,i:20,e:12,a:8}, wOp=false, distOp=true, qwOp=true, topOp=true;
+let S=[], W={c:35,o:25,i:20,e:12,a:8}, wOp=false, distOp=false, qwOp=false, topOp=true;
 let lastFileHandle=null, lastFileName='', urlTimer=null, urlActive=false;
 let lastColDebug='';
 let lMap=null, lMarkers=null, mapReady=false;
@@ -449,17 +400,6 @@ function getGlobalRP(){return $('gRP')?.value||'all'}
 function sC(s){const v=(1-(s.coeff||.7))*100;const r=s.rang?Math.max(0,100-s.rang/3):50;if(s.cecb&&s.invVB&&s.invVB>0&&s.idcVB!=null&&s.idcC){const g=s.idcC-s.idcVB;if(g>0){const c=s.invVB/(g*(s.sre||1000)*30);return Math.max(0,Math.min(100,100-c*40))}}return Math.min(100,v*.6+r*.4)}
 function sO(s){let sc=0;const f=(s.ht||'').toLowerCase();if(f.includes('mazout'))sc+=70;else if(f.includes('gaz')&&!f.includes('cad')&&!f.includes('pac'))sc+=55;else if(f.includes('gaz'))sc+=30;if(s.hsub&&String(s.hsub).length>2&&!/rien|maintien/i.test(s.hsub))sc+=15;if((s.coeff||.7)<.5)sc+=15;return Math.min(100,sc)}
 
-/* ================================================================
-   sI — Sous-score IDC / Thermique  (v33 : + consoTherm)
-   ================================================================
-   Chaîne de fallback :
-     1) consoTherm réelle (colonne « Conso Therm 2025 - kWh »)
-     2) estimation IDC × SRE
-     3) IDC seul  → comportement v32 inchangé
-     4) clIDC     → comportement v32 inchangé
-   Quand un volume (MWh) est disponible (cas 1 ou 2),
-   le score combine 65 % intensité + bonus volume (plafonné 100).
-   ================================================================ */
 function sI(s){
 var consoMWh=null;
 if(s.consoTherm&&s.consoTherm>0)consoMWh=s.consoTherm/1000;
@@ -495,6 +435,7 @@ function hBg(t){const f=(t||'').toLowerCase();if(f.includes('mazout'))return'<sp
 function ready(s){const hC=s.cecb;const hS=s.hsub&&String(s.hsub).length>3&&!/rien|maintien|stand/i.test(s.hsub);if(hC&&hS)return'<span class="bg" style="background:#27ae60">✅ Prêt</span>';if(hC)return'<span class="bg" style="background:#e67e22">⚙️ CECB+</span>';return'<span class="bg" style="background:#bbb">⏳</span>'}
 function fmtSRE(v){if(!v)return'<span style="color:#aaa">—</span>';return v.toLocaleString('fr-CH')}
 function fmtInv(v){if(!v||v<=0)return'—';if(v>=1e6)return(v/1e6).toFixed(1)+'M';return(v/1e3).toFixed(0)+'k'}
+function fmtIDCproj(v){if(!v&&v!==0)return'<span style="color:#aaa">—</span>';return'<span style="color:#27ae60;font-weight:600">'+v+'</span>'}
 
 function popRP(){const s=new Set();S.forEach(si=>{if(si.rp)s.add(si.rp)});const sorted=[...s].sort();const el=$('gRP');const cur=el.value;el.innerHTML='<option value="all">Tous les RP</option>';sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});el.value=cur||'all'}
 function ren(){renD();renR();renP();renM()}
@@ -520,7 +461,7 @@ let f=scored(rp,pa);
 if(ph!=='all')f=f.filter(s=>s.sc.ph===+ph);
 if(fo==='fos')f=f.filter(s=>isFos(s.ht));if(fo==='ren')f=f.filter(s=>{const t=(s.ht||'').toLowerCase();return t.includes('pac')||t.includes('bois')||t.includes('cad')});
 if(se)f=f.filter(s=>(s.id+s.nom+(s.rp||'')+(s.hsub||'')+(s.pat||'')+(s.adr||'')).toLowerCase().includes(se));
-$('rB').innerHTML=f.map((s,i)=>'<tr><td><b>'+(i+1)+'</b></td><td><b>'+s.id+'</b></td><td>'+s.nom+'<br><span style="color:#888;font-size:.63rem">'+(s.rp||'—')+'</span></td><td>'+patBg(s.pat)+'</td><td><div class="sb"><div class="sf" style="width:'+s.sc.t+'%;background:'+scCol(s.sc.t)+'">'+s.sc.t+'</div></div></td><td>'+pBg(s.sc.ph)+'</td><td style="color:'+((s.coeff||1)<.5?'#e74c3c':(s.coeff||1)<.7?'#e67e22':'#27ae60')+'">'+(s.coeff?Math.round(s.coeff*100)+'%':'?')+'</td><td>'+fmtSRE(s.sre)+'</td><td>'+(s.idcC||'<span style="color:#aaa">—</span>')+'</td><td>'+hBg(s.ht)+'</td><td style="font-size:.63rem">'+(s.hsub||'—')+'</td><td>'+(s.cecb?'<span class="bg" style="background:#27ae60">✓</span>':'<span class="bg" style="background:#e74c3c">✗</span>')+'</td><td>'+fmtInv(s.invVB)+'</td><td>'+ready(s)+'</td></tr>').join('')}
+$('rB').innerHTML=f.map((s,i)=>'<tr><td><b>'+(i+1)+'</b></td><td><b>'+s.id+'</b></td><td>'+s.nom+'<br><span style="color:#888;font-size:.63rem">'+(s.rp||'—')+'</span></td><td>'+patBg(s.pat)+'</td><td><div class="sb"><div class="sf" style="width:'+s.sc.t+'%;background:'+scCol(s.sc.t)+'">'+s.sc.t+'</div></div></td><td>'+pBg(s.sc.ph)+'</td><td style="color:'+((s.coeff||1)<.5?'#e74c3c':(s.coeff||1)<.7?'#e67e22':'#27ae60')+'">'+(s.coeff?Math.round(s.coeff*100)+'%':'?')+'</td><td>'+fmtSRE(s.sre)+'</td><td>'+(s.idcC||'<span style="color:#aaa">—</span>')+'</td><td style="text-align:center;color:#bbb;padding:0 1px;font-size:.7rem">→</td><td>'+fmtIDCproj(s.idcVB)+'</td><td>'+hBg(s.ht)+'</td><td style="font-size:.63rem">'+(s.hsub||'—')+'</td><td>'+(s.cecb?'<span class="bg" style="background:#27ae60">✓</span>':'<span class="bg" style="background:#e74c3c">✗</span>')+'</td><td>'+fmtInv(s.invVB)+'</td><td>'+ready(s)+'</td></tr>').join('')}
 
 function renP(){
 const rp=getGlobalRP();const sc=scored(rp);
@@ -705,12 +646,12 @@ const sc=scored();
 const geoCount=sc.filter(s=>s.lat&&s.lng&&(s.geoQ==='file'||s.geoQ==='nominatim')).length;
 const npaCount=sc.filter(s=>s.geoQ==='npa').length;
 
-let c='N°;Nom;Adresse;RP;Patrimoine;Score;Phase;Coeff;SRE;IDC;Chauffage;Substitution;CECB;Invest ImmOBA;Latitude;Longitude;Geo_Source\n';
+let c='N°;Nom;Adresse;RP;Patrimoine;Score;Phase;Coeff;SRE;IDC;IDC projeté;Chauffage;Substitution;CECB;Invest ImmOBA;Latitude;Longitude;Geo_Source\n';
 sc.forEach(s=>{
 const lat=(s.lat&&s.geoQ!=='npa')?s.lat.toFixed(6):'';
 const lng=(s.lng&&s.geoQ!=='npa')?s.lng.toFixed(6):'';
 const src=s.geoQ==='file'?'fichier':s.geoQ==='nominatim'?'nominatim':'';
-c+=s.id+';'+s.nom+';'+(s.adr||'')+';'+(s.rp||'')+';'+(s.pat||'')+';'+s.sc.t+';'+s.sc.ph+';'+(s.coeff||'')+';'+(s.sre||'')+';'+(s.idcC||'')+';'+(s.ht||'')+';'+(s.hsub||'')+';'+(s.cecb?'Oui':'Non')+';'+(s.invVB||'')+';'+lat+';'+lng+';'+src+'\n'});
+c+=s.id+';'+s.nom+';'+(s.adr||'')+';'+(s.rp||'')+';'+(s.pat||'')+';'+s.sc.t+';'+s.sc.ph+';'+(s.coeff||'')+';'+(s.sre||'')+';'+(s.idcC||'')+';'+(s.idcVB||'')+';'+(s.ht||'')+';'+(s.hsub||'')+';'+(s.cecb?'Oui':'Non')+';'+(s.invVB||'')+';'+lat+';'+lng+';'+src+'\n'});
 
 const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});
 const u=URL.createObjectURL(b);const a=document.createElement('a');
@@ -718,12 +659,12 @@ a.href=u;a.download='priorisation_PTE_geocode.csv';a.click();
 toast('📥 Export : '+geoCount+' coords précises'+(npaCount?' ('+npaCount+' NPA exclus)':''),'ok')}
 
 function exportCSV(){
-const sc=scored();let c='N°;Nom;Adresse;RP;Patrimoine;Score;Phase;Coeff;SRE;IDC;Chauffage;Substitution;CECB;Invest ImmOBA;Prêt\n';
-sc.forEach(s=>{c+=s.id+';'+s.nom+';'+(s.adr||'')+';'+(s.rp||'')+';'+(s.pat||'')+';'+s.sc.t+';'+s.sc.ph+';'+(s.coeff||'')+';'+(s.sre||'')+';'+(s.idcC||'')+';'+(s.ht||'')+';'+(s.hsub||'')+';'+(s.cecb?'Oui':'Non')+';'+(s.invVB||'')+';'+(s.cecb&&s.hsub?'Prêt':'Non')+'\n'});
+const sc=scored();let c='N°;Nom;Adresse;RP;Patrimoine;Score;Phase;Coeff;SRE;IDC;IDC projeté;Chauffage;Substitution;CECB;Invest ImmOBA;Prêt\n';
+sc.forEach(s=>{c+=s.id+';'+s.nom+';'+(s.adr||'')+';'+(s.rp||'')+';'+(s.pat||'')+';'+s.sc.t+';'+s.sc.ph+';'+(s.coeff||'')+';'+(s.sre||'')+';'+(s.idcC||'')+';'+(s.idcVB||'')+';'+(s.ht||'')+';'+(s.hsub||'')+';'+(s.cecb?'Oui':'Non')+';'+(s.invVB||'')+';'+(s.cecb&&s.hsub?'Prêt':'Non')+'\n'});
 const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='priorisation_PTE_L13210.csv';a.click()}
 
 /* ================================================================
-   PARSING — with Latitude/Longitude + ConsoTherm column detection
+   PARSING
    ================================================================ */
 function fc(h,ns){for(const n of ns){const nt=n.toLowerCase().replace(/[\s\n\r\u00a0\-_'"()\[\]\/\.]/g,'');const idx=h.findIndex(x=>{const xt=x.toLowerCase().replace(/[\s\n\r\u00a0\-_'"()\[\]\/\.]/g,'');return xt.includes(nt)});if(idx>=0)return idx}return-1}
 function gv(row,idx){if(idx<0||!row||idx>=row.length)return'';const v=row[idx];return(v===null||v===undefined||v==='')?'':String(v)}
@@ -757,7 +698,6 @@ agent:fc(h,['Agent']),
 pat:fc(h,['Classement au Patrimoine','Patrimoine']),
 elec:fc(h,['Conso Elec','ConsoElec']),
 eau:fc(h,['Conso Eau','ConsoEau']),
-/* ═══════ NEW: Conso Therm column ═══════ */
 consoTherm:fc(h,['Conso Therm','ConsoTherm','Conso Thermique','ConsoThermique']),
 co2:fc(h,['Co2 2025','Co2 2024','kgCo2','Co2']),
 clIDC:fc(h,['Classe IDC','ClasseIDC']),
@@ -769,7 +709,6 @@ ht:fc(h,['Chauffage Type Energie','ChauffageTypeEnergie','Chauffage Type']),
 hsub:fc(h,['Chauffage de subsitution','Chauffage de substitution','substitution']),
 idcVB:fc(h,['IDC projeté','IDCprojeté','IDC projete']),
 invVB:fc(h,['Invest ImmOBA','InvestImmOBA','Invest VB','Invest']),
-/* ═══════ GPS columns ═══════ */
 lat:fc(h,['Latitude','Lat','GPS_Lat','YCOOR','Y_WGS84','lat']),
 lng:fc(h,['Longitude','Long','Lng','GPS_Lng','XCOOR','X_WGS84','lng','lon']),
 geoSrc:fc(h,['Geo_Source','GeoSource','geo_source']),
@@ -792,7 +731,6 @@ const cecbStr=gv(R,c.cecb);
 const hasCECB=cecbStr&&(/var_|en cours|demandé|prio\s*\d/i.test(cecbStr));
 const htVal=gv(R,c.ht)||gv(R,c.agent)||'';
 
-/* ═══════ Read GPS from file if present ═══════ */
 let fileLat=null,fileLng=null,fileGeoQ='none';
 if(hasGPS){
   const rawLat=pn(gvr(R,c.lat));
@@ -808,7 +746,6 @@ sre:pn(gvr(R,c.sre)),idcC:pn(gvr(R,c.idcC)),
 pat:gv(R,c.pat)||'',fp:pn(gvr(R,c.fp)),
 clIDC:pn(gvr(R,c.clIDC)),clVet:pn(gvr(R,c.clVet)),
 elec:pn(gvr(R,c.elec)),eau:pn(gvr(R,c.eau)),
-/* ═══════ NEW: consoTherm field ═══════ */
 consoTherm:pn(gvr(R,c.consoTherm)),
 co2:pn(gvr(R,c.co2)),ht:htVal,
 hsub:gv(R,c.hsub),cecb:hasCECB,
@@ -852,7 +789,6 @@ popRP();ren();
 
 const fileGeo=S.filter(s=>s.geoQ==='file').length;
 const npaGeo=S.filter(s=>s.geoQ==='npa').length;
-const noGeo=S.filter(s=>s.geoQ==='none').length;
 
 updateSourceInfo(si.length,source,'file');
 updateGeoInfo();
@@ -866,13 +802,10 @@ else{
 
 function refreshData(){if(lastFileHandle){processFile(lastFileHandle);toast('🔄 Rechargement…','nf')}else{toast('⚠️ Aucun fichier','wr')}}
 
-function startUrlMode(){const url=$('srcUrl').value.trim();if(!url){toast('⚠️ URL manquante','wr');return}const iv=+$('srcInterval').value;stopUrlMode();fetchUrl(url);if(iv>0){urlTimer=setInterval(()=>fetchUrl(url),iv*1000);urlActive=true;$('urlStatus').innerHTML='<span class="pulse" style="color:#27ae60">● LIVE</span> toutes les '+iv+'s';toast('▶ Auto activé','ok')}}
-function stopUrlMode(){if(urlTimer){clearInterval(urlTimer);urlTimer=null}urlActive=false;$('urlStatus').textContent='Arrêté'}
-function fetchUrl(url){const ext=url.split('.').pop().toLowerCase().split('?')[0];fetch(url,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);if(ext==='xlsx'||ext==='xls'){return r.arrayBuffer().then(buf=>{const rows=xlsxToRows(buf);finishImport(rows,'URL: '+url.substring(0,40))})}else{return r.text().then(t=>{const rows=parseCSVtoRows(t);finishImport(rows,'URL: '+url.substring(0,40))})}}).catch(e=>{toast('⚠️ Erreur URL: '+e.message,'wr')})}
-
 function updateSourceInfo(count,source,type){
-$('srcCount').textContent=count;$('srcCols').textContent=lastColDebug;$('srcTime').textContent=new Date().toLocaleTimeString('fr-CH');$('srcType').textContent=source;$('lastFileInfo').textContent=lastFileName?'📄 '+lastFileName:'Aucun fichier';
-const badge=$('srcBadge');if(type==='url'&&urlActive){badge.className='src-indicator src-live';badge.textContent='● LIVE — '+count+' sites'}else if(type==='file'){badge.className='src-indicator src-file';badge.textContent='📄 '+count+' sites — '+(lastFileName||source)}else{badge.className='src-indicator src-none';badge.textContent='⚠ Données échantillon'}}
+const badge=$('srcBadge');
+if(type==='file'){badge.className='src-indicator src-file';badge.textContent='📄 '+count+' sites — '+(lastFileName||source)}
+else{badge.className='src-indicator src-none';badge.textContent='⚠ Données échantillon'}}
 
 /* ================================================================
    SAMPLE DATA
