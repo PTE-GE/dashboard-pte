@@ -7,6 +7,20 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- ★ Tailwind Leaflet fix inside Tailwind's own layer system -->
+<style type="text/tailwindcss">
+@layer base {
+  .leaflet-container img,
+  .leaflet-pane img,
+  .leaflet-tile-pane img,
+  img.leaflet-tile,
+  img.leaflet-marker-icon,
+  img.leaflet-marker-shadow {
+    max-width: none !important;
+    max-height: none !important;
+  }
+}
+</style>
 <style>
 :root{--pri:#1e3a5f;--sec:#2d6a9f;--acc:#e8a838;--grn:#27ae60;--red:#e74c3c;--bg:#f0f4f8}
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:#333;font-size:14px}
@@ -49,8 +63,6 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 .hdr-select{padding:4px 8px;border:1px solid rgba(255,255,255,.35);border-radius:6px;font-size:.78rem;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-weight:600;max-width:220px}
 .hdr-select option{color:#333;background:#fff}
 #leafMap{z-index:1}
-.leaflet-container img{max-width:none!important;max-height:none!important}
-.leaflet-tile-pane{z-index:2}
 .map-tooltip-custom{font-size:.75rem!important;line-height:1.5!important;padding:8px 12px!important}
 .map-legend{background:#fff;padding:8px 12px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.2);font-size:.7rem;line-height:1.8}
 .map-legend i{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
@@ -114,6 +126,23 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 .m-feas-tbl tr:nth-child(even){background:#f4f7fa}
 @media(max-width:768px){.sg{grid-template-columns:100px 1fr 32px}table{font-size:.65rem}th,td{padding:3px 2px}.pnl{padding:8px}.m-glossary{grid-template-columns:1fr}.m-flow{flex-direction:column}.m-flow-arrow{transform:rotate(90deg)}}
 </style>
+<!-- ★ LEAFLET × TAILWIND: CSS defense (belt) -->
+<style>
+#leafMap img,
+#leafMap .leaflet-tile-pane img,
+#leafMap .leaflet-tile-container img,
+#leafMap img.leaflet-tile,
+.leaflet-container img.leaflet-tile,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img{
+  max-width:none !important;
+  max-height:none !important;
+  padding:0 !important;
+  border:none !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+</style>
 </head>
 <body>
 <div class="toast" id="toast"></div>
@@ -121,7 +150,7 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:6px">
 <div>
 <h1>📊 Priorisation PTE — L 13210 Transition Écologique</h1>
-<p>Aide à la décision · Rénovation des bâtiments de l'État de Genève</p>
+<p>Aide à la décision</p>
 </div>
 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
 <span id="srcBadge" class="src-indicator src-none">⚠ Données échantillon</span>
@@ -156,7 +185,6 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 <div class="cd kpi"><div class="n" id="k5" style="color:#e74c3c">-</div><div class="l">🚀 Phase 1</div></div>
 <div class="cd kpi"><div class="n" id="k6">-</div><div class="l">💰 Invest (M)</div></div>
 </div>
-<!-- Pondérations -->
 <div class="cd">
 <div class="wt" onclick="tglW()"><h3 style="margin:0;border:none;padding:0">⚖️ Pondérations</h3><span class="ch op" id="wCh">▼</span></div>
 <div class="wb op" id="wB"><div style="padding-top:8px">
@@ -255,6 +283,7 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 <span id="mapCount" style="font-weight:600;color:var(--pri);font-size:.78rem"></span>
 <span id="mapFilterInfo" style="font-size:.72rem;color:#888"></span>
 <span id="mapGeoStatus" style="font-size:.7rem;color:var(--sec);font-weight:600"></span>
+<button class="bt bt-w bt-s" onclick="fixMap()" title="Forcer le rafraîchissement de la carte">🔄 Recharger carte</button>
 </div>
 <div id="leafMap" style="height:540px;border-radius:8px;border:1px solid #e2e8f0;background:#dde6f0"></div>
 <div id="mapWarn" style="font-size:.7rem;color:#e67e22;margin-top:4px"></div>
@@ -263,7 +292,7 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 
 <!-- ===== MANUEL ===== -->
 <div id="manual" class="pnl">
-<div class="m-hdr"><h2>📘 Manuel d'utilisation</h2><p>Outil de priorisation du Programme de Transition Écologique du parc immobilier</p><span class="m-ver">Version 2026 · Dernière mise à jour : avril 2026</span></div>
+<div class="m-hdr"><h2>📘 Manuel d'utilisation</h2><p>Outil de priorisation du Programme de Transition Écologique du parc immobilier</p><span class="m-ver">v23.04.2026</span></div>
 
 <div class="cd"><div class="wt" onclick="tglM(1)"><h3 style="margin:0;border:none;padding:0"><span class="m-num">1</span> À quoi sert cet outil ?</h3><span class="ch" id="mCh1">▼</span></div><div class="wb" id="mB1"><div class="m-body">
 <p>Cet outil permet de <strong>classer par ordre de priorité</strong> les bâtiments d'un parc immobilier afin de planifier les interventions du Programme de Transition Écologique (PTE).</p>
@@ -304,33 +333,13 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 
 <div class="cd"><div class="wt" onclick="tglM(4)"><h3 style="margin:0;border:none;padding:0"><span class="m-num">4</span> Lire le détail d'un site</h3><span class="ch" id="mCh4">▼</span></div><div class="wb" id="mB4"><div class="m-body">
 <p>Dans l'onglet <b>🏆 Classement</b>, <strong>cliquez sur n'importe quelle ligne</strong> du tableau pour déployer sa fiche détaillée. Cliquez à nouveau pour la refermer.</p>
-
 <h4>4.1 Le radar (à gauche)</h4>
 <p>Le diagramme à <strong>6 axes</strong> donne la <strong>silhouette énergétique</strong> du site. Les axes sont : CEE, CO₂, IDC, Électricité, Eau et Vétusté.</p>
-<p>Plus la forme s'étend vers l'extérieur sur un axe, plus le bâtiment est <strong>problématique</strong> sur ce critère. Un radar compact, replié vers le centre, indique un site globalement performant. Un radar très étiré vers CO₂ et IDC mais compact sur Eau et Élec signale un bâtiment énergivore en chaleur fossile mais sobre en électricité.</p>
-<div class="m-callout tip"><span class="m-ico">✅</span><div><strong>Astuce :</strong> Pour arbitrer entre deux sites proches au classement, comparez leurs radars côte à côte. La forme du radar révèle immédiatement où se situent les enjeux propres à chaque bâtiment.</div></div>
-
+<p>Plus la forme s'étend vers l'extérieur sur un axe, plus le bâtiment est <strong>problématique</strong> sur ce critère.</p>
+<div class="m-callout tip"><span class="m-ico">✅</span><div><strong>Astuce :</strong> Pour arbitrer entre deux sites proches au classement, comparez leurs radars côte à côte.</div></div>
 <h4>4.2 Les sous-scores (bandeau supérieur)</h4>
-<p>Six pastilles colorées affichent le score détaillé de chaque axe, de <b>0</b> (aucun enjeu) à <b>100</b> (enjeu maximal) :</p>
-<table class="m-phase-tbl"><thead><tr><th>Pastille</th><th>Signification</th></tr></thead><tbody>
-<tr><td><b style="color:#1a5276">CEE</b></td><td>Rentabilité de l'investissement — rapport coût vs. gain thermique</td></tr>
-<tr><td><b style="color:#c0392b">CO₂</b></td><td>Urgence de substitution des énergies fossiles</td></tr>
-<tr><td><b style="color:#e67e22">IDC</b></td><td>Intensité de la consommation thermique (kWh/m².an)</td></tr>
-<tr><td><b style="color:#7d3c98">Élec</b></td><td>Consommation électrique annuelle</td></tr>
-<tr><td><b style="color:#1e8449">Eau</b></td><td>Consommation d'eau annuelle</td></tr>
-<tr><td><b style="color:#7f8c8d">Vétusté</b></td><td>État du bâtiment (inversé du coefficient Stratus)</td></tr>
-</tbody></table>
-
-<h4>4.3 Les indicateurs complémentaires</h4>
-<p>Sous les pastilles, trois indicateurs contextualisent le score :</p>
-<table class="m-phase-tbl"><thead><tr><th>Indicateur</th><th>Lecture</th></tr></thead><tbody>
-<tr><td><b>📊 Complétude</b></td><td>Pourcentage de données renseignées pour ce site. 🟢 ≥ 80 % · 🟡 ≥ 50 % · 🔴 &lt; 50 %. Une complétude faible signale un score potentiellement moins fiable — les données manquantes sont remplacées par des estimations prudentes.</td></tr>
-<tr><td><b>🎯 Faisabilité</b></td><td>Capacité concrète à lancer les travaux, de 0 à 100. Intègre la disponibilité du CECB, l'existence d'un concept de substitution, l'inscription budgétaire, et le <b>niveau de protection patrimoniale</b> (voir détail ci-dessous).</td></tr>
-<tr><td><b>🔧 Intervention</b></td><td>Niveau de travaux recommandé (T1 → T4), déterminé par le croisement IDC × coefficient Stratus.</td></tr>
-</tbody></table>
-
-<h4>4.4 Détail du calcul de Faisabilité</h4>
-<p>La faisabilité est calculée comme une somme de bonus et de malus :</p>
+<p>Six pastilles colorées affichent le score détaillé de chaque axe, de <b>0</b> (aucun enjeu) à <b>100</b> (enjeu maximal).</p>
+<h4>4.3 Détail du calcul de Faisabilité</h4>
 <table class="m-feas-tbl"><thead><tr><th>Critère</th><th>Points</th></tr></thead><tbody>
 <tr><td>CECB+ réalisé</td><td style="color:#27ae60;font-weight:700">+33</td></tr>
 <tr><td>Concept de substitution identifié</td><td style="color:#27ae60;font-weight:700">+33</td></tr>
@@ -342,10 +351,8 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 <tr><td>Protection : Zone protégée</td><td style="color:#e74c3c;font-weight:700">−40</td></tr>
 <tr><td>Protection : Classé</td><td style="color:#e74c3c;font-weight:700">−50</td></tr>
 </tbody></table>
-<div class="m-callout info"><span class="m-ico">💡</span><div>Un site peut être <strong>très prioritaire</strong> (score élevé) mais afficher une <strong>faisabilité basse</strong> (contraintes fortes). C'est précisément cette tension qui aide à arbitrer : faut-il investir dans la levée des freins, reprogrammer l'intervention, ou rediriger les moyens vers un site à faisabilité plus immédiate ? La <b>matrice Urgence × Faisabilité</b> du Dashboard visualise cette tension.</div></div>
-
-<h4>4.5 Notes / Commentaires</h4>
-<p>En bas de la fiche, une zone de texte libre permet de consigner vos remarques, décisions ou compléments d'information. Les notes sont <strong>sauvegardées automatiquement</strong> et incluses dans l'export CSV.</p>
+<h4>4.4 Notes / Commentaires</h4>
+<p>En bas de la fiche, une zone de texte libre permet de consigner vos remarques. Les notes sont <strong>sauvegardées automatiquement</strong> et incluses dans l'export CSV.</p>
 </div></div></div>
 
 <div class="cd"><div class="wt" onclick="tglM(5)"><h3 style="margin:0;border:none;padding:0"><span class="m-num">5</span> Des données au planning</h3><span class="ch" id="mCh5">▼</span></div><div class="wb" id="mB5"><div class="m-body">
@@ -361,16 +368,16 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 <tr><td><span class="m-pb p3">Phase 3</span></td><td>30–44</td><td>2030–2033</td><td>Priorité modérée</td></tr>
 <tr><td><span class="m-pb p4">Phase 4</span></td><td>&lt; 30</td><td>2033+</td><td>Pas d'urgence</td></tr>
 </tbody></table>
-<div class="m-callout warn"><span class="m-ico">⚠️</span><div><strong>Exceptions automatiques :</strong> Un bâtiment très vétuste (coefficient &lt; 0.45) et très bien classé (rang ≤ 15) est promu en Phase 1 quel que soit son score. À l'inverse, un bâtiment en très bon état (coefficient ≥ 0.92) est placé en Phase 4.</div></div>
+<div class="m-callout warn"><span class="m-ico">⚠️</span><div><strong>Exceptions automatiques :</strong> Un bâtiment très vétuste (coefficient &lt; 0.45) et très bien classé (rang ≤ 15) est promu en Phase 1. Un bâtiment en très bon état (coefficient ≥ 0.92) est placé en Phase 4.</div></div>
 </div></div></div>
 
 <div class="cd"><div class="wt" onclick="tglM(6)"><h3 style="margin:0;border:none;padding:0"><span class="m-num">6</span> Utiliser le fichier au quotidien</h3><span class="ch" id="mCh6">▼</span></div><div class="wb" id="mB6"><div class="m-body">
 <div class="m-steps">
 <div class="m-step"><div class="m-step-n">1</div><div class="m-step-c"><h5>Ouvrir et vérifier les données sources</h5><p>Vérifiez que les données (adresse, SRE, IDC, chauffage, Stratus) sont à jour.</p></div></div>
 <div class="m-step"><div class="m-step-n">2</div><div class="m-step-c"><h5>Consulter le classement</h5><p>Les sites sont classés par score décroissant. Filtrez par phase, chauffage, patrimoine ou recherche libre.</p></div></div>
-<div class="m-step"><div class="m-step-n">3</div><div class="m-step-c"><h5>Analyser un site en détail</h5><p>Cliquez sur une ligne pour déployer le radar à 6 axes, les sous-scores, la faisabilité et les notes (voir section 4).</p></div></div>
+<div class="m-step"><div class="m-step-n">3</div><div class="m-step-c"><h5>Analyser un site en détail</h5><p>Cliquez sur une ligne pour déployer le radar à 6 axes, les sous-scores, la faisabilité et les notes.</p></div></div>
 <div class="m-step"><div class="m-step-n">4</div><div class="m-step-c"><h5>Mettre à jour les données</h5><p>Mettez à jour les cellules quand de nouvelles informations arrivent (audit, remplacement chauffage, IDC).</p></div></div>
-<div class="m-step"><div class="m-step-n">5</div><div class="m-step-c"><h5>Adapter les pondérations</h5><p>Ajustez les 6 curseurs si vos priorités stratégiques changent. Le curseur Vétusté peut être mis à 0 pour un classement purement transition écologique.</p></div></div>
+<div class="m-step"><div class="m-step-n">5</div><div class="m-step-c"><h5>Adapter les pondérations</h5><p>Ajustez les 6 curseurs si vos priorités stratégiques changent.</p></div></div>
 </div>
 <div class="m-callout tip"><span class="m-ico">✅</span><div><strong>Bonne pratique :</strong> Revue complète au minimum une fois par semestre.</div></div>
 </div></div></div>
@@ -379,33 +386,64 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 <div class="m-glossary">
 <div class="m-gitem"><strong>IDC (kWh/m²·an)</strong><span>Indice de Dépense de Chaleur.</span></div>
 <div class="m-gitem"><strong>SRE (m²)</strong><span>Surface de Référence Énergétique.</span></div>
-<div class="m-gitem"><strong>Coefficient Stratus</strong><span>Indice d'état du bâtiment (0 à 1). Sert de base au sous-score Vétusté.</span></div>
+<div class="m-gitem"><strong>Coefficient Stratus</strong><span>Indice d'état du bâtiment (0 à 1). Base du sous-score Vétusté.</span></div>
 <div class="m-gitem"><strong>CECB+</strong><span>Certificat Énergétique Cantonal des Bâtiments.</span></div>
 <div class="m-gitem"><strong>CAD</strong><span>Chauffage À Distance.</span></div>
 <div class="m-gitem"><strong>CEE</strong><span>Coût-Efficacité Énergétique.</span></div>
-<div class="m-gitem"><strong>Protection patrimoniale</strong><span>Classement cantonal genevois : Classé, Zone protégée, Inventaire, Ensembles 19e-20e, Objets d'intérêt, Non protégé. Impacte la faisabilité (−50 à 0), pas le score.</span></div>
-<div class="m-gitem"><strong>Faisabilité</strong><span>Score 0–100 mesurant la capacité à lancer les travaux : CECB, substitution, budget et protection patrimoniale.</span></div>
+<div class="m-gitem"><strong>Protection patrimoniale</strong><span>Classement genevois : Classé (−50), Zone protégée (−40), Inventaire (−30), Ensembles (−20), Objets d'intérêt (−10), Non protégé (0). Impacte la faisabilité uniquement.</span></div>
 <div class="m-gitem"><strong>Phase</strong><span>Tranche temporelle (P1=25-27, P2=27-30, P3=30-33, P4=33+).</span></div>
-<div class="m-gitem"><strong>Type d'intervention (T1–T4)</strong><span>Classification croisée IDC × Stratus. T1 = Suivi énergétique, T2 = Entretien/renouvellement, T3 = Gros travaux, T4 = Rénovation complète.</span></div>
+<div class="m-gitem"><strong>Faisabilité</strong><span>Score 0–100 combinant CECB, substitution, budget et malus patrimonial.</span></div>
+<div class="m-gitem"><strong>Type d'intervention (T1–T4)</strong><span>Croisement IDC × Stratus. T1=Suivi, T2=Entretien, T3=Gros travaux, T4=Rénovation complète.</span></div>
 </div>
 </div></div></div>
 
 <div class="cd"><div class="wt" onclick="tglM(8)"><h3 style="margin:0;border:none;padding:0"><span class="m-num">8</span> Questions fréquentes</h3><span class="ch" id="mCh8">▼</span></div><div class="wb" id="mB8"><div class="m-body">
 <div class="m-faq">
 <div class="m-faq-item"><div class="m-faq-q">« Pourquoi mon bâtiment est-il en Phase 4 alors qu'il a un mauvais IDC ? »</div><div class="m-faq-a">Probablement un coefficient Stratus très élevé (≥ 0.92), qui provoque une rétrogradation automatique en P4.</div></div>
-<div class="m-faq-item"><div class="m-faq-q">« Un site a changé de chauffage. Comment mettre à jour ? »</div><div class="m-faq-a">Modifiez le type de chauffage dans le fichier source puis réimportez. Le sous-score CO₂ sera recalculé automatiquement.</div></div>
-<div class="m-faq-item"><div class="m-faq-q">« Peut-on forcer un site dans une phase précise ? »</div><div class="m-faq-a">Oui, sur le diagramme de Gantt, glissez-déposez la barre du site vers la phase souhaitée. L'outil fournit un classement indicatif, ajustable en justifiant.</div></div>
-<div class="m-faq-item"><div class="m-faq-q">« Que se passe-t-il si des données manquent ? »</div><div class="m-faq-a">L'outil utilise des valeurs de repli prudentes. Le témoin 📊 Complétude (🔴 / 🟡 / 🟢) signale le niveau de fiabilité. Complétez dès que possible.</div></div>
-<div class="m-faq-item"><div class="m-faq-q">« Pourquoi un site classé 🏛 n'est-il pas pénalisé dans le score ? »</div><div class="m-faq-a">La protection patrimoniale n'influence plus le score (urgence) mais la <b>faisabilité</b> (réalisabilité). Un site classé très énergivore reste prioritaire au classement, mais sa faisabilité reflète les contraintes réglementaires et techniques. Consultez la matrice Urgence × Faisabilité pour arbitrer.</div></div>
-<div class="m-faq-item"><div class="m-faq-q">« La vétusté ne devrait pas compter, c'est un autre budget ! »</div><div class="m-faq-a">Par défaut, la vétusté pèse seulement 5 % du score. Elle reflète l'opportunité de coupler entretien et transition (économie d'échelle). Mettez le curseur à 0 % pour l'exclure totalement.</div></div>
-<div class="m-faq-item"><div class="m-faq-q">« Qu'est-ce que le Type d'intervention (T1–T4) ? »</div><div class="m-faq-a">Il croise l'IDC et le coefficient Stratus pour recommander un niveau d'intervention : <b>T1</b> = suivi comportemental, <b>T2</b> = entretien courant, <b>T3</b> = gros travaux / rénovation partielle, <b>T4</b> = rénovation complète. Si le type est incohérent avec la phase assignée (ex. T4 en P4), une alerte apparaît dans le dashboard.</div></div>
+<div class="m-faq-item"><div class="m-faq-q">« Pourquoi un site classé 🏛 n'est-il pas pénalisé dans le score ? »</div><div class="m-faq-a">La protection patrimoniale impacte la <b>faisabilité</b>, pas le score d'urgence. Consultez la matrice Urgence × Faisabilité.</div></div>
+<div class="m-faq-item"><div class="m-faq-q">« La vétusté ne devrait pas compter, c'est un autre budget ! »</div><div class="m-faq-a">Par défaut, la vétusté pèse seulement 5 %. Mettez le curseur à 0 % pour l'exclure totalement.</div></div>
+<div class="m-faq-item"><div class="m-faq-q">« La carte ne s'affiche pas ? »</div><div class="m-faq-a">Cliquez sur <b>🔄 Recharger carte</b>. Si le problème persiste, vérifiez que votre hébergeur n'applique pas de politique de sécurité (CSP) bloquant les domaines tile.openstreetmap.org.</div></div>
+<div class="m-faq-item"><div class="m-faq-q">« Qu'est-ce que le Type d'intervention (T1–T4) ? »</div><div class="m-faq-a">Il croise l'IDC et le coefficient Stratus pour recommander un niveau d'intervention : <b>T1</b> = suivi, <b>T2</b> = entretien, <b>T3</b> = gros travaux, <b>T4</b> = rénovation complète.</div></div>
 </div>
 </div></div></div>
 
-<div style="text-align:center;padding:16px;color:#999;font-size:.7rem">Outil de priorisation PTE · L 13210 Transition Écologique · v2026</div>
+<div style="text-align:center;padding:16px;color:#999;font-size:.7rem">Outil de priorisation PTE · L 13210 Transition Écologique · v23.04.2026</div>
 </div>
 
 <script>
+/* ================================================================
+   ★ NUCLEAR LEAFLET × TAILWIND FIX
+   MutationObserver + setProperty('important') = inline !important
+   This beats ANY stylesheet rule including Tailwind CDN's dynamic injection.
+   ================================================================ */
+(function leafletTailwindNuclearFix(){
+  function patchAll(){
+    var el=document.getElementById('leafMap');
+    if(!el)return;
+    var imgs=el.getElementsByTagName('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].style;
+      s.setProperty('max-width','none','important');
+      s.setProperty('max-height','none','important');
+      s.setProperty('padding','0','important');
+      s.setProperty('margin','0','');
+      s.setProperty('border','none','important');
+      s.setProperty('border-radius','0','important');
+      s.setProperty('box-shadow','none','important');
+    }
+  }
+  function init(){
+    var el=document.getElementById('leafMap');
+    if(!el)return;
+    try{new MutationObserver(patchAll).observe(el,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class']})}catch(e){}
+    patchAll();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
+  /* Belt + suspenders: also patch every 500ms for 30 seconds */
+  var n=0,iv=setInterval(function(){patchAll();if(!document.getElementById('leafMap'))return;init();if(++n>60)clearInterval(iv)},500);
+})();
+
 let S=[],W={c:30,o:25,i:20,e:12,a:8,v:5},wOp=true;
 let lastFileHandle=null,lastFileName='',lastColDebug='';
 let lMap=null,lMarkers=null,mapReady=false,geoCache={};
@@ -421,7 +459,7 @@ function extractNPA(a){if(!a)return null;const m=a.match(/\b(1[0-2]\d{2})\b/);re
 function cleanAddress(a){if(!a)return'';return a.replace(/\(.*?\)/g,'').replace(/\[.*?\]/g,'').replace(/\s+/g,' ').trim()}
 function toast(m,t){const e=$('toast');e.textContent=m;e.className='toast '+t+' sh';setTimeout(()=>e.classList.remove('sh'),3e3)}
 function $(id){return document.getElementById(id)}
-function sw(id,b){document.querySelectorAll('.pnl').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));$(id).classList.add('on');b.classList.add('on');ren();if(id==='mapPnl')setTimeout(()=>{initMap();if(lMap)lMap.invalidateSize();renM()},150)}
+function sw(id,b){document.querySelectorAll('.pnl').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));$(id).classList.add('on');b.classList.add('on');ren();if(id==='mapPnl')setTimeout(()=>{initMap();fixMap()},200)}
 function tglW(){wOp=!wOp;$('wB').classList.toggle('op',wOp);$('wCh').classList.toggle('op',wOp)}
 function tglS(bid,cid){const b=$(bid),c=$(cid);b.classList.toggle('op');c.classList.toggle('op');if(b.classList.contains('op'))setTimeout(()=>{b.querySelectorAll('[id^=g]').forEach(el=>{try{Plotly.Plots.resize(el)}catch(e){}})},400)}
 function tglM(n){$('mB'+n).classList.toggle('op');$('mCh'+n).classList.toggle('op')}
@@ -444,7 +482,6 @@ function pc(s){if(s===null||s===undefined)return null;if(typeof s==='number')ret
 function wN(){const t=W.c+W.o+W.i+W.e+W.a+W.v||1;return{c:W.c/t*100,o:W.o/t*100,i:W.i/t*100,e:W.e/t*100,a:W.a/t*100,v:W.v/t*100}}
 function getGlobalRP(){return $('gRP')?.value||'all'}
 
-/* === SCORING === */
 function sC(s){const v=(1-(s.coeff||.7))*100;const r=s.rang?Math.max(0,100-s.rang/3):50;if(s.cecb&&s.invVB&&s.invVB>0&&s.idcVB!=null&&s.idcC){const g=s.idcC-s.idcVB;if(g>0){const c=s.invVB/(g*(s.sre||1000)*30);return Math.max(0,Math.min(100,100-c*40))}}return Math.min(100,v*.3+r*.7)}
 function sO(s){let sc=0;const f=(s.ht||'').toLowerCase();if(f.includes('mazout'))sc+=70;else if(f.includes('gaz')&&!f.includes('cad')&&!f.includes('pac'))sc+=55;else if(f.includes('gaz'))sc+=30;if(s.hsub&&String(s.hsub).length>2&&!/rien|maintien/i.test(s.hsub))sc+=15;return Math.min(100,sc)}
 function sI(s){var cm=null;if(s.consoTherm&&s.consoTherm>0)cm=s.consoTherm/1000;else if(s.idcC&&s.sre)cm=(s.idcC*s.sre)/1000;var si=40;if(s.idcC){if(s.idcC>=220)si=100;else if(s.idcC>=180)si=80;else if(s.idcC>=125)si=55;else if(s.idcC>=83)si=30;else si=15}else if(s.clIDC){si=[0,30,55,80,100][s.clIDC]||30}if(cm!==null){var sv=0;if(cm>=5000)sv=30;else if(cm>=2000)sv=25;else if(cm>=1000)sv=20;else if(cm>=500)sv=15;else if(cm>=100)sv=10;else sv=5;return Math.min(100,Math.round(si*0.65+sv*1.15))}return si}
@@ -452,7 +489,6 @@ function sE(s){let sc=25;if(s.elec){if(s.elec>500000)sc+=45;else if(s.elec>10000
 function sA(s){let sc=15;if(s.eau){if(s.eau>5000)sc+=35;else if(s.eau>1000)sc+=20}if(s.sre&&s.sre>5000)sc+=15;return Math.min(100,sc)}
 function sV(s){const co=s.coeff!=null?s.coeff:0.7;return Math.min(100,Math.max(0,Math.round((1-co)*100)))}
 
-/* === Type d'intervention : croisement IDC × Coeff Stratus === */
 function calcTI(s){
 if(s.ti!=null&&s.ti>=1&&s.ti<=4)return s.ti;
 var idc=s.idcC||0,co=s.coeff!=null?s.coeff:0.7;
@@ -463,7 +499,6 @@ return[[1,1,2,2],[2,2,3,3],[2,3,3,4],[3,3,4,4]][il][sl]}
 var TI_LABELS={1:'Suivi énergétique',2:'Entretien / renouvellement',3:'Gros travaux / rénovation partielle',4:'Rénovation complète'};
 function tiBg(v){if(!v&&v!==0)return'<span class="bg" style="background:#bbb">—</span>';v=Math.round(v);var cols={1:'#27ae60',2:'#f1c40f',3:'#e67e22',4:'#e74c3c'};return'<span class="bg" title="'+(TI_LABELS[v]||'')+'" style="background:'+(cols[v]||'#bbb')+';color:'+(v===2?'#333':'#fff')+'">T'+v+'</span>'}
 
-/* === Score global (6 axes, sans facteur patrimonial) === */
 function score(s){const w=wN();const sub={c:sC(s),o:sO(s),i:sI(s),e:sE(s),a:sA(s),v:sV(s)};const raw=(sub.c*w.c+sub.o*w.o+sub.i*w.i+sub.e*w.e+sub.a*w.a+sub.v*w.v)/100;let ph;if(raw>=65||(s.rang&&s.rang<=15&&(s.coeff||1)<.45))ph=1;else if(raw>=45||(s.cecb&&(s.coeff||1)<.55))ph=2;else if(raw>=30)ph=3;else ph=4;if((s.coeff||0)>=.92)ph=4;if(phaseOverrides[s.id])ph=phaseOverrides[s.id];const ti=calcTI(s);return{t:Math.round(raw*10)/10,sub,ph,ti}}
 
 function scored(rp,pat){let r=S.map(s=>({...s,sc:score(s)})).sort((a,b)=>b.sc.t-a.sc.t);if(rp&&rp!=='all')r=r.filter(s=>s.rp===rp);if(pat==='prot')r=r.filter(s=>isProt(s.pat));else if(pat==='nprot')r=r.filter(s=>!isProt(s.pat));else if(pat&&pat!=='all')r=r.filter(s=>(s.pat||'')===pat);return r}
@@ -478,16 +513,13 @@ function fmtSRE(v){if(!v)return'—';return v.toLocaleString('fr-CH')}
 function fmtInv(v){if(!v||v<=0)return'—';if(v>=1e6)return(v/1e6).toFixed(1)+'M';return(v/1e3).toFixed(0)+'k'}
 function fmtIDCproj(v){if(!v&&v!==0)return'<span style="color:#aaa">—</span>';return'<span style="color:#27ae60;font-weight:600">'+v+'</span>'}
 
-/* C8 — Complétude */
 function compl(s){let t=9,f=0;if(s.sre)f++;if(s.idcC)f++;if(s.ht&&s.ht.length>1)f++;if(s.coeff!=null)f++;if(s.invVB&&s.invVB>0)f++;if(s.hsub&&s.hsub.length>2&&!/rien|maintien/i.test(s.hsub))f++;if(s.pat&&s.pat.length>1)f++;if(s.elec)f++;if(s.eau)f++;return Math.round(f/t*100)}
 function complBg(s){const p=compl(s);const e=p>=80?'🟢':p>=50?'🟡':'🔴';return'<span title="'+p+'% complet" style="cursor:help">'+e+'</span>'}
 
-/* B7 — Faisabilité (avec malus patrimonial genevois) */
 function patMalus(pat){if(!pat)return 0;if(pat.includes('Classé'))return -50;if(pat.includes('Zone protégée')||pat.includes('Zone prot'))return -40;if(pat.includes('Inventaire'))return -30;if(pat.includes('Ensembles'))return -20;if(pat.includes('Objets')||pat.includes("intérêt"))return -10;return 0}
 function feasib(s){let f=0;if(s.cecb)f+=33;if(s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub))f+=33;if(s.invVB&&s.invVB>0)f+=34;f+=patMalus(s.pat);return Math.max(0,Math.min(100,f))}
 function feasibBreak(s){let f=0,parts=[];if(s.cecb){f+=33;parts.push('CECB +33')}else parts.push('CECB 0');const hasSub=s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub);if(hasSub){f+=33;parts.push('Subst +33')}else parts.push('Subst 0');if(s.invVB&&s.invVB>0){f+=34;parts.push('Budget +34')}else parts.push('Budget 0');const pm=patMalus(s.pat);if(pm<0)parts.push('Patrimoine '+pm);f=Math.max(0,Math.min(100,f+pm));return{score:f,detail:parts.join(' · ')}}
 
-/* C10 — Anomalies */
 function detectAlerts(sites){const al=[];sites.forEach(s=>{
 if(s.idcC>150&&!isFos(s.ht)&&!s.ht.toLowerCase().includes('cad'))al.push({t:'warn',s,m:'IDC élevé ('+s.idcC+') mais chauffage non-fossile'});
 if((s.coeff||0)>=.92&&s.sc.ph===1)al.push({t:'err',s,m:'Stratus excellent ('+Math.round(s.coeff*100)+'%) mais classé P1'});
@@ -496,9 +528,9 @@ if(s.cecb&&(!s.hsub||s.hsub.length<3||/rien|maintien/i.test(s.hsub)))al.push({t:
 if((s.coeff||1)<.4&&s.sc.ph===4)al.push({t:'warn',s,m:'Très vétuste ('+Math.round((s.coeff||0)*100)+'%) mais en P4'});
 var ti=s.sc.ti;
 if(ti===4&&s.sc.ph>=3)al.push({t:'err',s,m:'Rénovation complète nécessaire (T4) mais planifié en P'+s.sc.ph+' — devrait être P1 ou P2'});
-if(ti===1&&s.sc.ph===1)al.push({t:'warn',s,m:'Simple suivi recommandé (T1) mais classé P1 — intervention possiblement prématurée'});
+if(ti===1&&s.sc.ph===1)al.push({t:'warn',s,m:'Simple suivi recommandé (T1) mais classé P1'});
 if(ti===3&&s.sc.ph===4)al.push({t:'warn',s,m:'Gros travaux recommandés (T3) mais repoussé en P4'});
-if(ti===2&&s.sc.ph===1)al.push({t:'warn',s,m:'Entretien courant (T2) mais classé P1 — vérifier la priorité'});
+if(ti===2&&s.sc.ph===1)al.push({t:'warn',s,m:'Entretien courant (T2) mais classé P1'});
 });return al}
 
 function popRP(){const s=new Set();S.forEach(si=>{if(si.rp)s.add(si.rp)});const sorted=[...s].sort();const el=$('gRP');const cur=el.value;el.innerHTML='<option value="all">Tous les RP</option>';sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});el.value=cur||'all'}
@@ -509,29 +541,23 @@ function renD(){
 const rp=getGlobalRP();const all=scored(rp);const n=all.length;
 $('k1').textContent=n;$('k2').textContent=all.filter(s=>isFos(s.ht)).length;$('k3').textContent=all.filter(s=>isProt(s.pat)).length;$('k4').textContent=all.filter(s=>s.cecb).length;$('k5').textContent=all.filter(s=>s.sc.ph===1).length;
 const inv=all.reduce((a,s)=>a+(s.invVB||0),0);$('k6').textContent=inv>0?(inv/1e6).toFixed(1):'N/D';
-
 try{
 Plotly.newPlot('gHist',[{x:all.map(s=>s.sc.t),type:'histogram',marker:{color:'#2d6a9f'},nbinsx:15}],{margin:{t:5,b:28,l:35,r:5},bargap:.2,xaxis:{title:{text:'Score',font:{size:10}}},yaxis:{title:{text:'Nb',font:{size:10}}},paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{size:9}},{responsive:true,displayModeBar:false});
 const ph=[1,2,3,4].map(p=>all.filter(s=>s.sc.ph===p).length);
 Plotly.newPlot('gPie',[{values:ph,labels:['P1 25-27','P2 27-30','P3 30-33','P4 33+'],type:'pie',marker:{colors:['#e74c3c','#e67e22','#3498db','#95a5a6']},textinfo:'value+percent',hole:.4}],{margin:{t:5,b:5,l:5,r:5},paper_bgcolor:'transparent',font:{size:9},showlegend:true,legend:{font:{size:8}}},{responsive:true,displayModeBar:false});
 }catch(e){}
-
 try{
 const mkUF=(arr,nm,cl)=>({x:arr.map(s=>feasib(s)),y:arr.map(s=>s.sc.t),text:arr.map(s=>s.id+' '+s.nom.substring(0,20)),mode:'markers',name:nm,marker:{size:arr.map(s=>Math.max(6,Math.min(16,(s.sre||2000)/1500))),color:cl,opacity:.8,line:{width:1,color:'#fff'}},hovertemplate:'%{text}<br>Score: %{y}<br>Faisabilité: %{x}<extra></extra>'});
 const fos=all.filter(s=>isFos(s.ht)),pro=all.filter(s=>isProt(s.pat)&&!isFos(s.ht)),oth=all.filter(s=>!isProt(s.pat)&&!isFos(s.ht));
 Plotly.newPlot('gUF',[mkUF(oth,'Autres','#2d6a9f'),mkUF(fos,'🔥 Fossiles','#e74c3c'),mkUF(pro,'🏛 Protégés','#8e44ad')],{margin:{t:5,b:35,l:40,r:10},xaxis:{title:{text:'Faisabilité (0–100)',font:{size:10}},range:[-5,105]},yaxis:{title:{text:'Urgence (Score)',font:{size:10}},range:[0,100]},paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{size:9},legend:{font:{size:8},orientation:'h',y:1.12},shapes:[{type:'line',x0:50,x1:50,y0:0,y1:100,line:{color:'#ccc',dash:'dot'}},{type:'line',x0:0,x1:100,y0:50,y1:50,line:{color:'#ccc',dash:'dot'}}],annotations:[{x:90,y:95,text:'🎯 Urgent+Faisable',showarrow:false,font:{size:8,color:'#27ae60'}},{x:10,y:95,text:'⚡ Urgent, à préparer',showarrow:false,font:{size:8,color:'#e67e22'}}]},{responsive:true,displayModeBar:false});
 }catch(e){}
-
 try{renAlerts(all)}catch(e){}
-
 $('topTitle').textContent=rp!=='all'?rp:'Global';
 const top=all.slice(0,20).reverse();
-if(top.length){try{Plotly.newPlot('gTop',[{y:top.map(s=>s.id+' '+s.nom.substring(0,24)+(isProt(s.pat)?' 🏛':'')),x:top.map(s=>s.sc.t),type:'bar',orientation:'h',marker:{color:top.map(s=>isProt(s.pat)?'#8e44ad':scCol(s.sc.t))},text:top.map(s=>s.sc.t.toFixed(1)),textposition:'outside',hovertemplate:'%{y}<br>Score: %{x}<extra></extra>'}],{margin:{t:5,b:28,l:200,r:45},xaxis:{title:{text:'Score',font:{size:10}},range:[0,100]},paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{size:8.5}},{responsive:true,displayModeBar:false})}catch(e){}}
-}
+if(top.length){try{Plotly.newPlot('gTop',[{y:top.map(s=>s.id+' '+s.nom.substring(0,24)+(isProt(s.pat)?' 🏛':'')),x:top.map(s=>s.sc.t),type:'bar',orientation:'h',marker:{color:top.map(s=>isProt(s.pat)?'#8e44ad':scCol(s.sc.t))},text:top.map(s=>s.sc.t.toFixed(1)),textposition:'outside',hovertemplate:'%{y}<br>Score: %{x}<extra></extra>'}],{margin:{t:5,b:28,l:200,r:45},xaxis:{title:{text:'Score',font:{size:10}},range:[0,100]},paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{size:8.5}},{responsive:true,displayModeBar:false})}catch(e){}}}
 
 function renAlerts(all){
-const al=detectAlerts(all);
-lastAlerts=al;
+const al=detectAlerts(all);lastAlerts=al;
 $('alCount').textContent=al.length?'('+al.length+')':'';
 if(!al.length){$('alList').innerHTML='<p style="color:#27ae60;font-size:.78rem">✅ Aucune anomalie détectée.</p>';return}
 $('alList').innerHTML=al.map(a=>'<div class="alert-card al-'+(a.t==='err'?'err':'warn')+'"><span>'+(a.t==='err'?'🔴':'🟠')+'</span><div><b>'+a.s.id+'</b> '+a.s.nom.substring(0,30)+' — '+a.m+'</div></div>').join('')}
@@ -542,9 +568,6 @@ let c='Type;N°;Site;Phase;Score;TI;Message\n';
 lastAlerts.forEach(a=>{c+=(a.t==='err'?'Erreur':'Avertissement')+';'+a.s.id+';'+a.s.nom.replace(/;/g,',')+';P'+a.s.sc.ph+';'+a.s.sc.t+';T'+a.s.sc.ti+';'+a.m.replace(/;/g,',')+'\n'});
 const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='alertes_anomalies_PTE.csv';a.click();toast('📥 '+lastAlerts.length+' alertes exportées','ok')}
 
-/* ================================================================
-   CLASSEMENT (colonne Prêt? supprimée)
-   ================================================================ */
 function renR(){
 expandedRow=null;
 const rp=getGlobalRP();const ph=$('fPh')?.value||'all';const fo=$('fFo')?.value||'all';const pa=$('fPa')?.value||'all';const se=($('fSe')?.value||'').toLowerCase();
@@ -554,7 +577,6 @@ if(fo==='fos')f=f.filter(s=>isFos(s.ht));if(fo==='ren')f=f.filter(s=>{const t=(s
 if(se)f=f.filter(s=>(s.id+s.nom+(s.rp||'')+(s.hsub||'')+(s.pat||'')+(s.adr||'')).toLowerCase().includes(se));
 $('rB').innerHTML=f.map((s,i)=>'<tr class="row-click" data-id="'+s.id+'" onclick="toggleDetail(\''+s.id+'\')"><td><b>'+(i+1)+'</b></td><td><b>'+s.id+'</b></td><td>'+s.nom+'<br><span style="color:#888;font-size:.63rem">'+(s.rp||'—')+'</span></td><td>'+patBg(s.pat)+'</td><td><div class="sb"><div class="sf" style="width:'+s.sc.t+'%;background:'+scCol(s.sc.t)+'">'+s.sc.t+'</div></div></td><td>'+tiBg(s.sc.ti)+'</td><td>'+pBg(s.sc.ph)+'</td><td style="color:'+((s.coeff||1)<.5?'#e74c3c':(s.coeff||1)<.7?'#e67e22':'#27ae60')+'">'+(s.coeff?Math.round(s.coeff*100)+'%':'?')+'</td><td>'+fmtSRE(s.sre)+'</td><td>'+(s.idcC||'—')+'</td><td>'+fmtIDCproj(s.idcVB)+'</td><td>'+hBg(s.ht)+'</td><td style="font-size:.63rem">'+(s.hsub||'—')+'</td><td>'+(s.cecb?'<span class="bg" style="background:#27ae60">✓</span>':'<span class="bg" style="background:#e74c3c">✗</span>')+'</td><td>'+fmtInv(s.invVB)+'</td><td>'+complBg(s)+'</td></tr>').join('')}
 
-/* A1 — Détail expand avec radar 6 axes + faisabilité détaillée + notes */
 function toggleDetail(id){
 const prev=document.getElementById('detRow');if(prev)prev.remove();
 const prevId=expandedRow;expandedRow=null;
@@ -572,9 +594,6 @@ setTimeout(()=>{try{Plotly.newPlot('detRadar',[{type:'scatterpolar',r:[sc.sub.c,
 
 function saveNote(id){const ta=$('noteTA');if(ta)siteNotes[id]=ta.value;toast('💾 Note sauvegardée','ok')}
 
-/* ================================================================
-   PHASAGE + GANTT
-   ================================================================ */
 const phColors={1:'#e74c3c',2:'#e67e22',3:'#3498db',4:'#95a5a6'};
 const phPos=[{l:0,w:16.67},{l:16.67,w:25},{l:41.67,w:25},{l:66.67,w:33.33}];
 
@@ -606,59 +625,128 @@ document.addEventListener('mousemove',function(e){if(!dragState)return;const{bar
 document.addEventListener('mouseup',function(){if(!dragState)return;const{id,bar}=dragState;const ph=parseInt(bar.dataset.ph);phaseOverrides[id]=ph;bar.style.opacity='1';bar.style.zIndex='2';dragState=null;renP();toast('📅 '+id+' → Phase '+ph,'nf')});
 
 /* ================================================================
-   MAP
+   MAP — OSM primary, no crossOrigin, robust tile fallback
    ================================================================ */
+var TILE_PROVIDERS=[
+  {name:'OSM',url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+   attr:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'},
+  {name:'CARTO Voyager',url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+   attr:'© <a href="https://www.openstreetmap.org/copyright">OSM</a> · © <a href="https://carto.com/">CARTO</a>',sub:'abcd'},
+  {name:'CARTO Light',url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+   attr:'© OSM · © CARTO',sub:'abcd'}
+];
+var currentTileIdx=0,tileLayer=null;
+
+/* ★ Force inline !important on every tile image (nuclear fix) */
+function patchTileImages(){
+  var el=document.getElementById('leafMap');if(!el)return;
+  var imgs=el.getElementsByTagName('img');
+  for(var i=0;i<imgs.length;i++){
+    var s=imgs[i].style;
+    s.setProperty('max-width','none','important');
+    s.setProperty('max-height','none','important');
+    s.setProperty('padding','0','important');
+    s.setProperty('border','none','important');
+    s.setProperty('border-radius','0','important');
+    s.setProperty('box-shadow','none','important');
+  }
+}
+
 function initMap(){
-if(mapReady)return;if(typeof L==='undefined'){$('mapWarn').textContent='⚠️ Leaflet non chargé.';return}
-try{lMap=L.map('leafMap',{zoomControl:true,scrollWheelZoom:true}).setView([geoCtx.lat,geoCtx.lng],12);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',subdomains:'abcd',maxZoom:19}).addTo(lMap);
-lMarkers=L.layerGroup().addTo(lMap);
-const leg=L.control({position:'bottomright'});leg.onAdd=function(){const d=L.DomUtil.create('div','map-legend');d.innerHTML='<b>Phases</b><br><i style="background:#e74c3c"></i> P1<br><i style="background:#e67e22"></i> P2<br><i style="background:#3498db"></i> P3<br><i style="background:#95a5a6"></i> P4';return d};leg.addTo(lMap);
-mapReady=true}catch(e){$('mapWarn').textContent='⚠️ '+e.message}}
+  if(mapReady)return;
+  if(typeof L==='undefined'){
+    $('mapWarn').innerHTML='⚠️ <b>Leaflet non chargé.</b>';return}
+  try{
+    lMap=L.map('leafMap',{zoomControl:true,scrollWheelZoom:true}).setView([geoCtx.lat,geoCtx.lng],12);
+    addTileLayer(0);
+    lMarkers=L.layerGroup().addTo(lMap);
+    var leg=L.control({position:'bottomright'});
+    leg.onAdd=function(){var d=L.DomUtil.create('div','map-legend');d.innerHTML='<b>Phases</b><br><i style="background:#e74c3c"></i> P1<br><i style="background:#e67e22"></i> P2<br><i style="background:#3498db"></i> P3<br><i style="background:#95a5a6"></i> P4';return d};
+    leg.addTo(lMap);
+    mapReady=true;
+    /* Patch on every tile/layer event */
+    lMap.on('layeradd',patchTileImages);
+    lMap.on('moveend',patchTileImages);
+    lMap.on('zoomend',patchTileImages);
+  }catch(e){$('mapWarn').textContent='⚠️ '+e.message}
+}
+
+function addTileLayer(idx){
+  if(idx>=TILE_PROVIDERS.length){
+    $('mapWarn').innerHTML='⚠️ <b>Aucun fournisseur de tuiles accessible.</b>';return}
+  currentTileIdx=idx;
+  var p=TILE_PROVIDERS[idx];
+  var opts={attribution:p.attr,maxZoom:19};
+  if(p.sub)opts.subdomains=p.sub;
+  if(tileLayer&&lMap){try{lMap.removeLayer(tileLayer)}catch(e){}}
+  tileLayer=L.tileLayer(p.url,opts);
+  var errCount=0;
+  tileLayer.on('tileerror',function(){
+    errCount++;if(errCount>=4){
+      $('mapWarn').textContent='⚠️ Tuiles '+p.name+' inaccessibles, bascule…';
+      addTileLayer(idx+1)}});
+  tileLayer.on('load',function(){$('mapWarn').textContent='';patchTileImages()});
+  tileLayer.on('tileload',patchTileImages);
+  tileLayer.addTo(lMap);
+  /* Patch immediately and repeatedly during load */
+  patchTileImages();
+  setTimeout(patchTileImages,200);
+  setTimeout(patchTileImages,600);
+  setTimeout(patchTileImages,1500);
+  $('mapWarn').textContent='🗺️ Chargement '+p.name+'…';
+}
+
+function fixMap(){
+  if(!mapReady){initMap();return}
+  if(!lMap)return;
+  lMap.invalidateSize();patchTileImages();
+  setTimeout(function(){lMap.invalidateSize();patchTileImages()},300);
+  setTimeout(function(){lMap.invalidateSize();patchTileImages();renM()},600);
+}
 
 function getFilteredForMap(){
-const rp=getGlobalRP();const ph=$('fPh')?.value||'all';const fo=$('fFo')?.value||'all';const pa=$('fPa')?.value||'all';const se=($('fSe')?.value||'').toLowerCase();
-let f=scored(rp,pa);if(ph!=='all')f=f.filter(s=>s.sc.ph===+ph);
-if(fo==='fos')f=f.filter(s=>isFos(s.ht));if(fo==='ren')f=f.filter(s=>{const t=(s.ht||'').toLowerCase();return t.includes('pac')||t.includes('bois')||t.includes('cad')});
-if(se)f=f.filter(s=>(s.id+s.nom+(s.rp||'')+(s.hsub||'')+(s.pat||'')+(s.adr||'')).toLowerCase().includes(se));return f}
+  const rp=getGlobalRP();const ph=$('fPh')?.value||'all';const fo=$('fFo')?.value||'all';const pa=$('fPa')?.value||'all';const se=($('fSe')?.value||'').toLowerCase();
+  let f=scored(rp,pa);if(ph!=='all')f=f.filter(s=>s.sc.ph===+ph);
+  if(fo==='fos')f=f.filter(s=>isFos(s.ht));if(fo==='ren')f=f.filter(s=>{const t=(s.ht||'').toLowerCase();return t.includes('pac')||t.includes('bois')||t.includes('cad')});
+  if(se)f=f.filter(s=>(s.id+s.nom+(s.rp||'')+(s.hsub||'')+(s.pat||'')+(s.adr||'')).toLowerCase().includes(se));return f}
 
 function renM(){
-if(!mapReady||!lMap||!lMarkers)return;lMarkers.clearLayers();
-const f=getFilteredForMap();const bounds=[];
-const fileG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='file');const nomiG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='nominatim');const npaG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='npa');const none=f.filter(s=>!s.lat||!s.lng||s.geoQ==='none');
-$('mapCount').innerHTML='📍 <b>'+fileG.length+'</b> fichier · <b>'+nomiG.length+'</b> Nominatim · <b>'+npaG.length+'</b> ≈NPA'+(none.length?' · <span style="color:#e67e22">'+none.length+' sans</span>':'');
-if(fileG.length>0)$('geoTip').style.display='none';
-const addM=(arr,border,op)=>{arr.forEach(s=>{const c=phColors[s.sc.ph]||'#95a5a6';const m=L.circleMarker([s.lat,s.lng],{radius:7,fillColor:c,color:border,weight:2,opacity:1,fillOpacity:op}).addTo(lMarkers);m.bindTooltip(mkTip(s),{direction:'top',className:'map-tooltip-custom'});bounds.push([s.lat,s.lng])})};
-addM(fileG,'#27ae60',.9);addM(nomiG,'#fff',.85);addM(npaG,'#888',.35);
-if(bounds.length>1)lMap.fitBounds(bounds,{padding:[30,30],maxZoom:15});else if(bounds.length===1)lMap.setView(bounds[0],14)}
+  if(!mapReady||!lMap||!lMarkers)return;lMarkers.clearLayers();
+  const f=getFilteredForMap();const bounds=[];
+  const fileG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='file');const nomiG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='nominatim');const npaG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='npa');const none=f.filter(s=>!s.lat||!s.lng||s.geoQ==='none');
+  $('mapCount').innerHTML='📍 <b>'+fileG.length+'</b> fichier · <b>'+nomiG.length+'</b> Nominatim · <b>'+npaG.length+'</b> ≈NPA'+(none.length?' · <span style="color:#e67e22">'+none.length+' sans</span>':'');
+  if(fileG.length>0)$('geoTip').style.display='none';
+  const addM=(arr,border,op)=>{arr.forEach(s=>{const c=phColors[s.sc.ph]||'#95a5a6';const m=L.circleMarker([s.lat,s.lng],{radius:7,fillColor:c,color:border,weight:2,opacity:1,fillOpacity:op}).addTo(lMarkers);m.bindTooltip(mkTip(s),{direction:'top',className:'map-tooltip-custom'});bounds.push([s.lat,s.lng])})};
+  addM(fileG,'#27ae60',.9);addM(nomiG,'#fff',.85);addM(npaG,'#888',.35);
+  if(bounds.length>1)lMap.fitBounds(bounds,{padding:[30,30],maxZoom:15});else if(bounds.length===1)lMap.setView(bounds[0],14);
+  setTimeout(patchTileImages,200);
+  setTimeout(patchTileImages,800);
+}
 
 function mkTip(s){return'<div style="min-width:180px;font-size:.76rem;line-height:1.5"><b style="color:#1e3a5f">'+s.id+'</b> — '+s.nom+'<br>📍 '+(s.adr||'—')+'<br>📐 SRE: <b>'+(s.sre?s.sre.toLocaleString('fr-CH')+' m²':'—')+'</b><br>🔥 IDC: <b>'+(s.idcC||'—')+'</b><br>📊 Score: <b>'+s.sc.t+'</b> · P<b>'+s.sc.ph+'</b> · T<b>'+s.sc.ti+'</b></div>'}
 
-/* GEOCODING */
 let geoRunning=false;
 async function geocodeSites(){
-if(geoRunning)return;const toGeo=S.filter(s=>s.adr&&s.adr.length>3&&s.geoQ!=='file'&&s.geoQ!=='nominatim');
-if(!toGeo.length){$('mapGeoStatus').textContent='✅ Tous géolocalisés';return}
-let ok=false;try{const t=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+(geoCtx.cc==='ae'?'Dubai':'Geneve')+'&limit=1');ok=t.ok}catch(e){}
-if(!ok){$('mapWarn').textContent='⚠️ Nominatim inaccessible.';return}
-geoRunning=true;let done=0,failed=0,batch=0;
-for(const s of toGeo){const clean=cleanAddress(s.adr);if(!clean||clean.length<4){failed++;continue}
-if(geoCache[clean]){s.lat=geoCache[clean].lat;s.lng=geoCache[clean].lng;s.geoQ='nominatim';s.geoFallback=false;done++;batch++;if(batch%10===0)renM();continue}
-try{const aL=clean.toLowerCase();const ns=!aL.includes('genève')&&!aL.includes('dubai');const q=encodeURIComponent(clean+(ns?geoCtx.suffix:''));const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes='+geoCtx.cc+'&q='+q+'&limit=1');const d=await r.json();
-if(d&&d.length>0){s.lat=+d[0].lat;s.lng=+d[0].lon;s.geoQ='nominatim';s.geoFallback=false;geoCache[clean]={lat:s.lat,lng:s.lng};done++;batch++}else failed++}catch(e){failed++}
-$('mapGeoStatus').textContent='🌐 '+done+'/'+toGeo.length;if(batch>=10){batch=0;renM()}await new Promise(r=>setTimeout(r,1100))}
-$('mapGeoStatus').textContent='✅ '+done+(failed?' · ⚠'+failed:'');geoRunning=false;renM()}
+  if(geoRunning)return;const toGeo=S.filter(s=>s.adr&&s.adr.length>3&&s.geoQ!=='file'&&s.geoQ!=='nominatim');
+  if(!toGeo.length){$('mapGeoStatus').textContent='✅ Tous géolocalisés';return}
+  let ok=false;try{const t=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+(geoCtx.cc==='ae'?'Dubai':'Geneve')+'&limit=1');ok=t.ok}catch(e){}
+  if(!ok){$('mapWarn').textContent='⚠️ Nominatim inaccessible.';return}
+  geoRunning=true;let done=0,failed=0,batch=0;
+  for(const s of toGeo){const clean=cleanAddress(s.adr);if(!clean||clean.length<4){failed++;continue}
+  if(geoCache[clean]){s.lat=geoCache[clean].lat;s.lng=geoCache[clean].lng;s.geoQ='nominatim';s.geoFallback=false;done++;batch++;if(batch%10===0)renM();continue}
+  try{const aL=clean.toLowerCase();const ns=!aL.includes('genève')&&!aL.includes('dubai');const q=encodeURIComponent(clean+(ns?geoCtx.suffix:''));const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes='+geoCtx.cc+'&q='+q+'&limit=1');const d=await r.json();
+  if(d&&d.length>0){s.lat=+d[0].lat;s.lng=+d[0].lon;s.geoQ='nominatim';s.geoFallback=false;geoCache[clean]={lat:s.lat,lng:s.lng};done++;batch++}else failed++}catch(e){failed++}
+  $('mapGeoStatus').textContent='🌐 '+done+'/'+toGeo.length;if(batch>=10){batch=0;renM()}await new Promise(r=>setTimeout(r,1100))}
+  $('mapGeoStatus').textContent='✅ '+done+(failed?' · ⚠'+failed:'');geoRunning=false;renM()}
 
 function assignFallbackCoords(){S.forEach(s=>{if(s.lat&&s.lng&&!s.geoFallback){if(s.geoQ!=='nominatim')s.geoQ='file';return}const npa=extractNPA(s.adr);if(npa&&GE_NPA[npa]){const[lat,lng]=GE_NPA[npa];s.lat=lat+(Math.random()-.5)*.004;s.lng=lng+(Math.random()-.5)*.004;s.geoQ='npa';s.geoFallback=true}else{s.lat=null;s.lng=null;s.geoQ='none';s.geoFallback=true}})}
 
-/* EXPORT */
 function exportGeoCSV(){
-const sc=scored();let c='N°;Nom;Adresse;RP;Patrimoine;Score;Type_intervention;Phase;Coeff;SRE;IDC;IDC projeté;Chauffage;Substitution;CECB;Invest ImmOBA;Complétude;Faisabilité;Notes;Latitude;Longitude;Geo_Source\n';
-sc.forEach(s=>{const lat=(s.lat&&s.geoQ!=='npa')?s.lat.toFixed(6):'';const lng=(s.lng&&s.geoQ!=='npa')?s.lng.toFixed(6):'';const src=s.geoQ==='file'?'fichier':s.geoQ==='nominatim'?'nominatim':'';const note=(siteNotes[s.id]||'').replace(/;/g,',').replace(/\n/g,' ');
-c+=s.id+';'+s.nom+';'+(s.adr||'')+';'+(s.rp||'')+';'+(s.pat||'')+';'+s.sc.t+';'+s.sc.ti+';'+s.sc.ph+';'+(s.coeff||'')+';'+(s.sre||'')+';'+(s.idcC||'')+';'+(s.idcVB||'')+';'+(s.ht||'')+';'+(s.hsub||'')+';'+(s.cecb?'Oui':'Non')+';'+(s.invVB||'')+';'+compl(s)+'%;'+feasib(s)+';'+note+';'+lat+';'+lng+';'+src+'\n'});
-const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='priorisation_PTE_geocode.csv';a.click();toast('📥 Export terminé','ok')}
+  const sc=scored();let c='N°;Nom;Adresse;RP;Patrimoine;Score;Type_intervention;Phase;Coeff;SRE;IDC;IDC projeté;Chauffage;Substitution;CECB;Invest ImmOBA;Complétude;Faisabilité;Notes;Latitude;Longitude;Geo_Source\n';
+  sc.forEach(s=>{const lat=(s.lat&&s.geoQ!=='npa')?s.lat.toFixed(6):'';const lng=(s.lng&&s.geoQ!=='npa')?s.lng.toFixed(6):'';const src=s.geoQ==='file'?'fichier':s.geoQ==='nominatim'?'nominatim':'';const note=(siteNotes[s.id]||'').replace(/;/g,',').replace(/\n/g,' ');
+  c+=s.id+';'+s.nom+';'+(s.adr||'')+';'+(s.rp||'')+';'+(s.pat||'')+';'+s.sc.t+';'+s.sc.ti+';'+s.sc.ph+';'+(s.coeff||'')+';'+(s.sre||'')+';'+(s.idcC||'')+';'+(s.idcVB||'')+';'+(s.ht||'')+';'+(s.hsub||'')+';'+(s.cecb?'Oui':'Non')+';'+(s.invVB||'')+';'+compl(s)+'%;'+feasib(s)+';'+note+';'+lat+';'+lng+';'+src+'\n'});
+  const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='priorisation_PTE_geocode.csv';a.click();toast('📥 Export terminé','ok')}
 
-/* PARSING */
 function fc(h,ns){for(const n of ns){const nt=n.toLowerCase().replace(/[\s\n\r\u00a0\-_'"()\[\]\/\.]/g,'');const idx=h.findIndex(x=>{const xt=x.toLowerCase().replace(/[\s\n\r\u00a0\-_'"()\[\]\/\.]/g,'');return xt.includes(nt)});if(idx>=0)return idx}return-1}
 function gv(row,idx){if(idx<0||!row||idx>=row.length)return'';const v=row[idx];return(v===null||v===undefined||v==='')?'':String(v)}
 function gvr(row,idx){if(idx<0||!row||idx>=row.length)return null;const v=row[idx];return(v===null||v===undefined||v==='')?null:v}
@@ -666,15 +754,15 @@ function parseCSVtoRows(t){const fl=t.split('\n')[0]||'';const sep=(fl.split(';'
 function xlsxToRows(buf){const d=new Uint8Array(buf);const wb=XLSX.read(d,{type:'array'});let bs=wb.SheetNames[0],bc=0;for(const n of wb.SheetNames){const s=wb.Sheets[n];if(!s['!ref'])continue;const r=XLSX.utils.decode_range(s['!ref']);const c=r.e.c-r.s.c+1;if(c>bc){bc=c;bs=n}}return XLSX.utils.sheet_to_json(wb.Sheets[bs],{header:1,defval:'',raw:true,blankrows:false})}
 
 function importFromRows(rows){
-if(rows.length<2)return[];const h=rows[0].map(v=>String(v||'').trim());
-const c={id:fc(h,['N° sous site','nsoussite','N°soussite','N°']),nom:fc(h,['Nom du site_AB','Nomdusite','Nom du site']),adr:fc(h,['Adresse','Adresse du site','Lieu']),rang:fc(h,['Rang actuel','Rang']),coeff:fc(h,['Coeff Stratus','CoeffStratus']),sre:fc(h,['SRE corrigée','SREcorrigée','SRE']),idcC:fc(h,['IDC corrigé','IDCcorrigé','IDC corrige']),agent:fc(h,['Agent']),pat:fc(h,['Classement au Patrimoine','Patrimoine']),elec:fc(h,['Conso Elec','ConsoElec']),eau:fc(h,['Conso Eau','ConsoEau']),consoTherm:fc(h,['Conso Therm','ConsoTherm']),co2:fc(h,['Co2 2025','Co2 2024','kgCo2','Co2']),clIDC:fc(h,['Classe IDC','ClasseIDC']),clVet:fc(h,['Classe Vétusté','ClasseVetuste']),fp:fc(h,['Facteur protection','Facteurprotection']),ti:fc(h,["Type d'intervention","TypeIntervention","Type_intervention","Typeintervention","Type intervention"]),rp:fc(h,['Responsables Portefeuille','ResponsablesPortefeuille','RP']),cecb:fc(h,['Audit CECB','AuditCECB']),ht:fc(h,['Chauffage Type Energie','ChauffageTypeEnergie','Chauffage Type']),hsub:fc(h,['Chauffage de subsitution','Chauffage de substitution','substitution']),idcVB:fc(h,['IDC projeté','IDCprojeté']),invVB:fc(h,['Invest ImmOBA','InvestImmOBA','Invest VB','Invest']),lat:fc(h,['Latitude','Lat','GPS_Lat','YCOOR']),lng:fc(h,['Longitude','Long','Lng','GPS_Lng','XCOOR','lon']),notes:fc(h,['Notes','Commentaires','Remarques'])};
-const hasGPS=c.lat>=0&&c.lng>=0;const adrCol=c.adr>=0?c.adr:2;let fgc=0;const sites=[];
-for(let r=1;r<rows.length;r++){const R=rows[r];if(!R||R.length<5)continue;const rpV=gv(R,c.rp);if(!rpV||rpV.toLowerCase().includes('hors périmètre'))continue;const id=gv(R,c.id);if(!id||id.length<2)continue;
-const coeff=pc(gvr(R,c.coeff));const cecbStr=gv(R,c.cecb);const hasCECB=cecbStr&&(/var_|en cours|demandé|prio\s*\d/i.test(cecbStr));const htVal=gv(R,c.ht)||gv(R,c.agent)||'';
-let fLat=null,fLng=null,fQ='none';if(hasGPS){const rLat=pn(gvr(R,c.lat)),rLng=pn(gvr(R,c.lng));if(rLat&&rLng&&Math.abs(rLat)>1&&Math.abs(rLng)>0.01){fLat=rLat;fLng=rLng;fQ='file';fgc++}}
-if(c.notes>=0){const n=gv(R,c.notes);if(n)siteNotes[id]=n}
-sites.push({id,nom:(gv(R,c.nom)||'').replace(/\s*-\s*\(.*/,'').substring(0,55),adr:gv(R,adrCol),rp:rpV.trim(),rang:pn(gvr(R,c.rang)),coeff,sre:pn(gvr(R,c.sre)),idcC:pn(gvr(R,c.idcC)),pat:gv(R,c.pat)||'',fp:pn(gvr(R,c.fp)),ti:pn(gvr(R,c.ti)),clIDC:pn(gvr(R,c.clIDC)),clVet:pn(gvr(R,c.clVet)),elec:pn(gvr(R,c.elec)),eau:pn(gvr(R,c.eau)),consoTherm:pn(gvr(R,c.consoTherm)),co2:pn(gvr(R,c.co2)),ht:htVal,hsub:gv(R,c.hsub),cecb:hasCECB,idcVB:pn(gvr(R,c.idcVB)),invVB:pn(gvr(R,c.invVB)),lat:fLat,lng:fLng,geoQ:fQ,geoFallback:fQ==='none'})}
-return sites}
+  if(rows.length<2)return[];const h=rows[0].map(v=>String(v||'').trim());
+  const c={id:fc(h,['N° sous site','nsoussite','N°soussite','N°']),nom:fc(h,['Nom du site_AB','Nomdusite','Nom du site']),adr:fc(h,['Adresse','Adresse du site','Lieu']),rang:fc(h,['Rang actuel','Rang']),coeff:fc(h,['Coeff Stratus','CoeffStratus']),sre:fc(h,['SRE corrigée','SREcorrigée','SRE']),idcC:fc(h,['IDC corrigé','IDCcorrigé','IDC corrige']),agent:fc(h,['Agent']),pat:fc(h,['Classement au Patrimoine','Patrimoine']),elec:fc(h,['Conso Elec','ConsoElec']),eau:fc(h,['Conso Eau','ConsoEau']),consoTherm:fc(h,['Conso Therm','ConsoTherm']),co2:fc(h,['Co2 2025','Co2 2024','kgCo2','Co2']),clIDC:fc(h,['Classe IDC','ClasseIDC']),clVet:fc(h,['Classe Vétusté','ClasseVetuste']),fp:fc(h,['Facteur protection','Facteurprotection']),ti:fc(h,["Type d'intervention","TypeIntervention","Type_intervention","Typeintervention","Type intervention"]),rp:fc(h,['Responsables Portefeuille','ResponsablesPortefeuille','RP']),cecb:fc(h,['Audit CECB','AuditCECB']),ht:fc(h,['Chauffage Type Energie','ChauffageTypeEnergie','Chauffage Type']),hsub:fc(h,['Chauffage de subsitution','Chauffage de substitution','substitution']),idcVB:fc(h,['IDC projeté','IDCprojeté']),invVB:fc(h,['Invest ImmOBA','InvestImmOBA','Invest VB','Invest']),lat:fc(h,['Latitude','Lat','GPS_Lat','YCOOR']),lng:fc(h,['Longitude','Long','Lng','GPS_Lng','XCOOR','lon']),notes:fc(h,['Notes','Commentaires','Remarques'])};
+  const hasGPS=c.lat>=0&&c.lng>=0;const adrCol=c.adr>=0?c.adr:2;let fgc=0;const sites=[];
+  for(let r=1;r<rows.length;r++){const R=rows[r];if(!R||R.length<5)continue;const rpV=gv(R,c.rp);if(!rpV||rpV.toLowerCase().includes('hors périmètre'))continue;const id=gv(R,c.id);if(!id||id.length<2)continue;
+  const coeff=pc(gvr(R,c.coeff));const cecbStr=gv(R,c.cecb);const hasCECB=cecbStr&&(/var_|en cours|demandé|prio\s*\d/i.test(cecbStr));const htVal=gv(R,c.ht)||gv(R,c.agent)||'';
+  let fLat=null,fLng=null,fQ='none';if(hasGPS){const rLat=pn(gvr(R,c.lat)),rLng=pn(gvr(R,c.lng));if(rLat&&rLng&&Math.abs(rLat)>1&&Math.abs(rLng)>0.01){fLat=rLat;fLng=rLng;fQ='file';fgc++}}
+  if(c.notes>=0){const n=gv(R,c.notes);if(n)siteNotes[id]=n}
+  sites.push({id,nom:(gv(R,c.nom)||'').replace(/\s*-\s*\(.*/,'').substring(0,55),adr:gv(R,adrCol),rp:rpV.trim(),rang:pn(gvr(R,c.rang)),coeff,sre:pn(gvr(R,c.sre)),idcC:pn(gvr(R,c.idcC)),pat:gv(R,c.pat)||'',fp:pn(gvr(R,c.fp)),ti:pn(gvr(R,c.ti)),clIDC:pn(gvr(R,c.clIDC)),clVet:pn(gvr(R,c.clVet)),elec:pn(gvr(R,c.elec)),eau:pn(gvr(R,c.eau)),consoTherm:pn(gvr(R,c.consoTherm)),co2:pn(gvr(R,c.co2)),ht:htVal,hsub:gv(R,c.hsub),cecb:hasCECB,idcVB:pn(gvr(R,c.idcVB)),invVB:pn(gvr(R,c.invVB)),lat:fLat,lng:fLng,geoQ:fQ,geoFallback:fQ==='none'})}
+  return sites}
 
 function handleFileImport(e){const f=e.target.files[0];if(!f)return;lastFileHandle=f;lastFileName=f.name;processFile(f)}
 function processFile(f){const ext=f.name.split('.').pop().toLowerCase();const reader=new FileReader();if(ext==='xlsx'||ext==='xls'){reader.onload=function(ev){try{finishImport(xlsxToRows(ev.target.result),f.name)}catch(er){toast('⚠️ '+er.message,'wr')}};reader.readAsArrayBuffer(f)}else{reader.onload=function(ev){try{finishImport(parseCSVtoRows(ev.target.result),f.name)}catch(er){toast('⚠️ '+er.message,'wr')}};reader.readAsText(f,'UTF-8')}}
@@ -682,7 +770,6 @@ function finishImport(rows,source){const si=importFromRows(rows);if(!si?.length)
 function refreshData(){if(lastFileHandle){processFile(lastFileHandle);toast('🔄','nf')}else toast('⚠️ Aucun fichier','wr')}
 function updateSourceInfo(count,source,type){const badge=$('srcBadge');if(type==='file'){badge.className='src-indicator src-file';badge.textContent='📄 '+count+' sites — '+(lastFileName||source)}else{badge.className='src-indicator src-none';badge.textContent='⚠ Données échantillon'}}
 
-/* SAMPLE */
 function loadSample(){S=[
 {id:"847291",nom:"Château Courant d'Air",adr:"Sheikh Mohammed bin Rashid Blvd 4, Downtown Dubai",lat:25.1972,lng:55.2744,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",rang:35,coeff:.50,sre:4411,idcC:144,ht:"Mazout",hsub:"PAC+Gaz",fp:.5,pat:"Objets d'intérêt",elec:137101,co2:212125,clIDC:3,clVet:4,cecb:false,invVB:7490390},
 {id:"163854",nom:"Villa Passoire Thermique",adr:"Al Wasl Road 22, Jumeirah 1",lat:25.2105,lng:55.2500,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",rang:90,coeff:.53,sre:2231,idcC:83,ht:"Gaz",hsub:"CAD SIG Champel",fp:1,pat:"Non protégé",elec:73818,co2:44546,clIDC:2,clVet:4,cecb:false,invVB:3947500},
