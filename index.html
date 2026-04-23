@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<!-- ★ Tailwind Leaflet fix inside Tailwind's own layer system -->
 <style type="text/tailwindcss">
 @layer base {
   .leaflet-container img,
@@ -124,9 +123,11 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 .m-feas-tbl th:first-child{border-radius:6px 0 0 0}.m-feas-tbl th:last-child{border-radius:0 6px 0 0}
 .m-feas-tbl td{padding:6px 10px;border-bottom:1px solid #e2e8f0}
 .m-feas-tbl tr:nth-child(even){background:#f4f7fa}
+.tile-select{padding:4px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:.73rem;background:#fff;cursor:pointer;max-width:200px}
+.tile-status{font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap}
+.tile-ok{background:#d4edda;color:#155724}.tile-loading{background:#fff3cd;color:#856404}.tile-err{background:#f8d7da;color:#721c24}
 @media(max-width:768px){.sg{grid-template-columns:100px 1fr 32px}table{font-size:.65rem}th,td{padding:3px 2px}.pnl{padding:8px}.m-glossary{grid-template-columns:1fr}.m-flow{flex-direction:column}.m-flow-arrow{transform:rotate(90deg)}}
 </style>
-<!-- ★ LEAFLET × TAILWIND: CSS defense (belt) -->
 <style>
 #leafMap img,
 #leafMap .leaflet-tile-pane img,
@@ -283,7 +284,20 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 <span id="mapCount" style="font-weight:600;color:var(--pri);font-size:.78rem"></span>
 <span id="mapFilterInfo" style="font-size:.72rem;color:#888"></span>
 <span id="mapGeoStatus" style="font-size:.7rem;color:var(--sec);font-weight:600"></span>
-<button class="bt bt-w bt-s" onclick="fixMap()" title="Forcer le rafraîchissement de la carte">🔄 Recharger carte</button>
+</div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+<label style="font-size:.73rem;font-weight:600;color:var(--pri)">🗺️ Fond de carte :</label>
+<select id="tileSelect" class="tile-select" onchange="switchTile(+this.value)">
+<option value="0">🌍 Esri World Street</option>
+<option value="1">🏔️ Esri World Topo</option>
+<option value="2">🛰️ Esri Satellite</option>
+<option value="3" selected="">🗺️ CARTO Voyager</option>
+<option value="4">⬜ CARTO Positron</option>
+<option value="5">⬛ CARTO Dark</option>
+<option value="6">🟢 OpenStreetMap</option>
+<option value="7">🏔️ OpenTopoMap</option>
+</select>
+<span id="tileStatus" class="tile-status tile-loading">⏳ …</span>
 </div>
 <div id="leafMap" style="height:540px;border-radius:8px;border:1px solid #e2e8f0;background:#dde6f0"></div>
 <div id="mapWarn" style="font-size:.7rem;color:#e67e22;margin-top:4px"></div>
@@ -402,7 +416,7 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 <div class="m-faq-item"><div class="m-faq-q">« Pourquoi mon bâtiment est-il en Phase 4 alors qu'il a un mauvais IDC ? »</div><div class="m-faq-a">Probablement un coefficient Stratus très élevé (≥ 0.92), qui provoque une rétrogradation automatique en P4.</div></div>
 <div class="m-faq-item"><div class="m-faq-q">« Pourquoi un site classé 🏛 n'est-il pas pénalisé dans le score ? »</div><div class="m-faq-a">La protection patrimoniale impacte la <b>faisabilité</b>, pas le score d'urgence. Consultez la matrice Urgence × Faisabilité.</div></div>
 <div class="m-faq-item"><div class="m-faq-q">« La vétusté ne devrait pas compter, c'est un autre budget ! »</div><div class="m-faq-a">Par défaut, la vétusté pèse seulement 5 %. Mettez le curseur à 0 % pour l'exclure totalement.</div></div>
-<div class="m-faq-item"><div class="m-faq-q">« La carte ne s'affiche pas ? »</div><div class="m-faq-a">Cliquez sur <b>🔄 Recharger carte</b>. Si le problème persiste, vérifiez que votre hébergeur n'applique pas de politique de sécurité (CSP) bloquant les domaines tile.openstreetmap.org.</div></div>
+<div class="m-faq-item"><div class="m-faq-q">« La carte ne s'affiche pas ? »</div><div class="m-faq-a">Changez de fond de carte dans le sélecteur (Esri fonctionne souvent mieux sur GitHub Pages et en local). Si le problème persiste, vérifiez votre connexion réseau ou la politique CSP de votre hébergeur.</div></div>
 <div class="m-faq-item"><div class="m-faq-q">« Qu'est-ce que le Type d'intervention (T1–T4) ? »</div><div class="m-faq-a">Il croise l'IDC et le coefficient Stratus pour recommander un niveau d'intervention : <b>T1</b> = suivi, <b>T2</b> = entretien, <b>T3</b> = gros travaux, <b>T4</b> = rénovation complète.</div></div>
 </div>
 </div></div></div>
@@ -413,13 +427,10 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 <script>
 /* ================================================================
    ★ NUCLEAR LEAFLET × TAILWIND FIX
-   MutationObserver + setProperty('important') = inline !important
-   This beats ANY stylesheet rule including Tailwind CDN's dynamic injection.
    ================================================================ */
 (function leafletTailwindNuclearFix(){
   function patchAll(){
-    var el=document.getElementById('leafMap');
-    if(!el)return;
+    var el=document.getElementById('leafMap');if(!el)return;
     var imgs=el.getElementsByTagName('img');
     for(var i=0;i<imgs.length;i++){
       var s=imgs[i].style;
@@ -433,14 +444,11 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
     }
   }
   function init(){
-    var el=document.getElementById('leafMap');
-    if(!el)return;
+    var el=document.getElementById('leafMap');if(!el)return;
     try{new MutationObserver(patchAll).observe(el,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class']})}catch(e){}
     patchAll();
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
-  else init();
-  /* Belt + suspenders: also patch every 500ms for 30 seconds */
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
   var n=0,iv=setInterval(function(){patchAll();if(!document.getElementById('leafMap'))return;init();if(++n>60)clearInterval(iv)},500);
 })();
 
@@ -625,19 +633,36 @@ document.addEventListener('mousemove',function(e){if(!dragState)return;const{bar
 document.addEventListener('mouseup',function(){if(!dragState)return;const{id,bar}=dragState;const ph=parseInt(bar.dataset.ph);phaseOverrides[id]=ph;bar.style.opacity='1';bar.style.zIndex='2';dragState=null;renP();toast('📅 '+id+' → Phase '+ph,'nf')});
 
 /* ================================================================
-   MAP — OSM primary, no crossOrigin, robust tile fallback
+   MAP — 8 TILE PROVIDERS with user selector
    ================================================================ */
 var TILE_PROVIDERS=[
-  {name:'OSM',url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-   attr:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'},
-  {name:'CARTO Voyager',url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-   attr:'© <a href="https://www.openstreetmap.org/copyright">OSM</a> · © <a href="https://carto.com/">CARTO</a>',sub:'abcd'},
-  {name:'CARTO Light',url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-   attr:'© OSM · © CARTO',sub:'abcd'}
+  /* 0 */ {name:'🌍 Esri World Street',
+    url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attr:'© Esri · Sources: Esri, HERE, Garmin, USGS',maxZoom:18},
+  /* 1 */ {name:'🏔️ Esri World Topo',
+    url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    attr:'© Esri · Sources: Esri, HERE, Garmin, USGS',maxZoom:18},
+  /* 2 */ {name:'🛰️ Esri Satellite',
+    url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attr:'© Esri · Sources: Esri, Maxar, Earthstar',maxZoom:18},
+  /* 3 */ {name:'🗺️ CARTO Voyager',
+    url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attr:'© <a href="https://www.openstreetmap.org/copyright">OSM</a> · © <a href="https://carto.com/">CARTO</a>',sub:'abcd',maxZoom:19},
+  /* 4 */ {name:'⬜ CARTO Positron',
+    url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attr:'© OSM · © CARTO',sub:'abcd',maxZoom:19},
+  /* 5 */ {name:'⬛ CARTO Dark',
+    url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attr:'© OSM · © CARTO',sub:'abcd',maxZoom:19},
+  /* 6 */ {name:'🟢 OpenStreetMap',
+    url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attr:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19},
+  /* 7 */ {name:'🏔️ OpenTopoMap',
+    url:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attr:'© OpenTopoMap · © OSM',sub:'abc',maxZoom:17}
 ];
 var currentTileIdx=0,tileLayer=null;
 
-/* ★ Force inline !important on every tile image (nuclear fix) */
 function patchTileImages(){
   var el=document.getElementById('leafMap');if(!el)return;
   var imgs=el.getElementsByTagName('img');
@@ -654,17 +679,16 @@ function patchTileImages(){
 
 function initMap(){
   if(mapReady)return;
-  if(typeof L==='undefined'){
-    $('mapWarn').innerHTML='⚠️ <b>Leaflet non chargé.</b>';return}
+  if(typeof L==='undefined'){$('mapWarn').innerHTML='⚠️ <b>Leaflet non chargé.</b>';return}
   try{
     lMap=L.map('leafMap',{zoomControl:true,scrollWheelZoom:true}).setView([geoCtx.lat,geoCtx.lng],12);
-    addTileLayer(0);
+    var defIdx=+($('tileSelect').value||3);
+    addTileLayer(defIdx);
     lMarkers=L.layerGroup().addTo(lMap);
     var leg=L.control({position:'bottomright'});
     leg.onAdd=function(){var d=L.DomUtil.create('div','map-legend');d.innerHTML='<b>Phases</b><br><i style="background:#e74c3c"></i> P1<br><i style="background:#e67e22"></i> P2<br><i style="background:#3498db"></i> P3<br><i style="background:#95a5a6"></i> P4';return d};
     leg.addTo(lMap);
     mapReady=true;
-    /* Patch on every tile/layer event */
     lMap.on('layeradd',patchTileImages);
     lMap.on('moveend',patchTileImages);
     lMap.on('zoomend',patchTileImages);
@@ -672,28 +696,42 @@ function initMap(){
 }
 
 function addTileLayer(idx){
-  if(idx>=TILE_PROVIDERS.length){
-    $('mapWarn').innerHTML='⚠️ <b>Aucun fournisseur de tuiles accessible.</b>';return}
+  if(idx<0||idx>=TILE_PROVIDERS.length)idx=0;
   currentTileIdx=idx;
   var p=TILE_PROVIDERS[idx];
-  var opts={attribution:p.attr,maxZoom:19};
+  var opts={attribution:p.attr,maxZoom:p.maxZoom||19};
   if(p.sub)opts.subdomains=p.sub;
+  /* ★ Do NOT set crossOrigin — some providers reject it from file:// and GitHub Pages */
   if(tileLayer&&lMap){try{lMap.removeLayer(tileLayer)}catch(e){}}
   tileLayer=L.tileLayer(p.url,opts);
-  var errCount=0;
+  var errCount=0,loaded=false;
+  var ts=$('tileStatus');
+  if(ts){ts.className='tile-status tile-loading';ts.textContent='⏳ Chargement…'}
   tileLayer.on('tileerror',function(){
-    errCount++;if(errCount>=4){
-      $('mapWarn').textContent='⚠️ Tuiles '+p.name+' inaccessibles, bascule…';
-      addTileLayer(idx+1)}});
-  tileLayer.on('load',function(){$('mapWarn').textContent='';patchTileImages()});
+    errCount++;
+    if(errCount>=6&&!loaded){
+      if(ts){ts.className='tile-status tile-err';ts.textContent='❌ Échec '+p.name}
+      $('mapWarn').textContent='⚠️ Tuiles «'+p.name+'» inaccessibles — essayez un autre fond de carte.';
+    }
+  });
+  tileLayer.on('load',function(){
+    loaded=true;
+    if(ts){ts.className='tile-status tile-ok';ts.textContent='✅ '+p.name}
+    $('mapWarn').textContent='';patchTileImages();
+  });
   tileLayer.on('tileload',patchTileImages);
   tileLayer.addTo(lMap);
-  /* Patch immediately and repeatedly during load */
   patchTileImages();
   setTimeout(patchTileImages,200);
   setTimeout(patchTileImages,600);
   setTimeout(patchTileImages,1500);
-  $('mapWarn').textContent='🗺️ Chargement '+p.name+'…';
+}
+
+function switchTile(idx){
+  if(!mapReady){initMap();return}
+  addTileLayer(idx);
+  setTimeout(function(){lMap.invalidateSize();patchTileImages()},300);
+  toast('🗺️ '+TILE_PROVIDERS[idx].name,'nf');
 }
 
 function fixMap(){
