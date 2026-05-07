@@ -129,30 +129,14 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 @media(max-width:768px){.sg{grid-template-columns:100px 1fr 32px}table{font-size:.65rem}th,td{padding:3px 2px}.pnl{padding:8px}.m-glossary{grid-template-columns:1fr}.m-flow{flex-direction:column}.m-flow-arrow{transform:rotate(90deg)}}
 </style>
 <style>
-#leafMap img,
-#leafMap .leaflet-tile-pane img,
-#leafMap .leaflet-tile-container img,
-#leafMap img.leaflet-tile,
-.leaflet-container img.leaflet-tile,
-.leaflet-container .leaflet-tile-pane img,
-.leaflet-container img{
-  max-width:none !important;
-  max-height:none !important;
-  padding:0 !important;
-  border:none !important;
-  border-radius:0 !important;
-  box-shadow:none !important;
-}
+#leafMap img,#leafMap .leaflet-tile-pane img,#leafMap .leaflet-tile-container img,#leafMap img.leaflet-tile,.leaflet-container img.leaflet-tile,.leaflet-container .leaflet-tile-pane img,.leaflet-container img{max-width:none !important;max-height:none !important;padding:0 !important;border:none !important;border-radius:0 !important;box-shadow:none !important}
 </style>
 </head>
 <body>
 <div class="toast" id="toast"></div>
 <div class="hdr">
 <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:6px">
-<div>
-<h1>📊 Priorisation PTE — L 13210 Transition Écologique</h1>
-<p>Aide à la décision</p>
-</div>
+<div><h1>📊 Priorisation PTE — L 13210 Transition Écologique</h1><p>Aide à la décision</p></div>
 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
 <span id="srcBadge" class="src-indicator src-none">⚠ Données échantillon</span>
 <button class="bt bt-i bt-s" onclick="$('fIn').click()">📂 Importer</button>
@@ -182,7 +166,7 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 <div class="cd kpi"><div class="n" id="k1">-</div><div class="l">Sites actifs</div></div>
 <div class="cd kpi"><div class="n" id="k2" style="color:#c0392b">-</div><div class="l">🔥 Fossiles</div></div>
 <div class="cd kpi"><div class="n" id="k3" style="color:#8e44ad">-</div><div class="l">🏛️ Protégés</div></div>
-<div class="cd kpi"><div class="n" id="k4" style="color:#27ae60">-</div><div class="l">✅ CECB+</div></div>
+<div class="cd kpi"><div class="n" id="k4" style="color:#27ae60">-</div><div class="l" id="k4l">✅ CECB+</div></div>
 <div class="cd kpi"><div class="n" id="k5" style="color:#e74c3c">-</div><div class="l">🚀 Phase 1</div></div>
 <div class="cd kpi"><div class="n" id="k6">-</div><div class="l">💰 Invest (M)</div></div>
 </div>
@@ -427,7 +411,7 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
 
 <script>
 /* ================================================================
-   ★ NUCLEAR LEAFLET × TAILWIND FIX
+   ★ NUCLEAR LEAFLET × TAILWIND FIX  (self-contained IIFE)
    ================================================================ */
 (function leafletTailwindNuclearFix(){
   function patchAll(){
@@ -453,43 +437,66 @@ T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</t
   var n=0,iv=setInterval(function(){patchAll();if(!document.getElementById('leafMap'))return;init();if(++n>60)clearInterval(iv)},500);
 })();
 
+
+/* ================================================================
+   MODULE 1 : STATE — Données globales & configuration
+   ================================================================ */
 let S=[],W={c:30,o:25,i:20,e:12,a:8,v:5},wOp=true;
 let lastFileHandle=null,lastFileName='',lastColDebug='';
 let lMap=null,lMarkers=null,mapReady=false,geoCache={};
 let siteNotes={},phaseOverrides={},expandedRow=null,dragState=null;
 let lastAlerts=[];
-
 let geoCtx={lat:46.2044,lng:6.1432,suffix:', Genève, Suisse',cc:'ch'};
-function detectGeoContext(){const w=S.filter(s=>s.lat&&s.lng&&!s.geoFallback);if(w.length>5){const aLat=w.reduce((a,s)=>a+s.lat,0)/w.length,aLng=w.reduce((a,s)=>a+s.lng,0)/w.length;if(aLat>20&&aLat<28&&aLng>50&&aLng<60){geoCtx={lat:aLat,lng:aLng,suffix:', Dubai, UAE',cc:'ae'};return}geoCtx={lat:aLat,lng:aLng,suffix:', Genève, Suisse',cc:'ch'};return}let du=0;S.forEach(s=>{if(s.adr&&/duba[ïi]|jumeirah|deira|sheikh|palm|marina|business\s?bay/i.test(s.adr))du++});if(du>S.length*0.15)geoCtx={lat:25.2048,lng:55.2708,suffix:', Dubai, UAE',cc:'ae'};else geoCtx={lat:46.2044,lng:6.1432,suffix:', Genève, Suisse',cc:'ch'}}
 
 const GE_NPA={'1200':[46.2044,6.1432],'1201':[46.2095,6.1410],'1202':[46.2155,6.1495],'1203':[46.1968,6.1400],'1204':[46.2005,6.1545],'1205':[46.1900,6.1525],'1206':[46.2015,6.1635],'1207':[46.2080,6.1320],'1208':[46.1880,6.1685],'1209':[46.2200,6.1350],'1210':[46.2130,6.1100],'1211':[46.2270,6.1420],'1212':[46.1810,6.1200],'1213':[46.1895,6.1105],'1214':[46.2085,6.0870],'1215':[46.2330,6.0650],'1216':[46.2240,6.1050],'1217':[46.2340,6.0470],'1218':[46.2320,6.1280],'1219':[46.2100,6.1100],'1220':[46.2150,6.0950],'1222':[46.2285,6.2000],'1223':[46.2095,6.1800],'1224':[46.1950,6.1900],'1225':[46.1930,6.2000],'1226':[46.1880,6.2080],'1227':[46.1850,6.1350],'1228':[46.1650,6.1150],'1229':[46.1810,6.1080],'1231':[46.1730,6.1600],'1232':[46.1680,6.0900],'1233':[46.1700,6.0650],'1234':[46.1780,6.1280]};
 
-function extractNPA(a){if(!a)return null;const m=a.match(/\b(1[0-2]\d{2})\b/);return m?m[1]:null}
-function cleanAddress(a){if(!a)return'';return a.replace(/\(.*?\)/g,'').replace(/\[.*?\]/g,'').replace(/\s+/g,' ').trim()}
-function toast(m,t){const e=$('toast');e.textContent=m;e.className='toast '+t+' sh';setTimeout(()=>e.classList.remove('sh'),3e3)}
+
+/* ================================================================
+   MODULE 2 : UTILS — Helpers, formatters, badges, CECB+ icons
+   ================================================================ */
 function $(id){return document.getElementById(id)}
-function sw(id,b){document.querySelectorAll('.pnl').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));$(id).classList.add('on');b.classList.add('on');ren();if(id==='mapPnl')setTimeout(()=>{initMap();fixMap()},200)}
-function tglW(){wOp=!wOp;$('wB').classList.toggle('op',wOp);$('wCh').classList.toggle('op',wOp)}
-function tglS(bid,cid){const b=$(bid),c=$(cid);b.classList.toggle('op');c.classList.toggle('op');if(b.classList.contains('op'))setTimeout(()=>{b.querySelectorAll('[id^=g]').forEach(el=>{try{Plotly.Plots.resize(el)}catch(e){}})},400)}
-function tglM(n){$('mB'+n).classList.toggle('op');$('mCh'+n).classList.toggle('op')}
-
-function uW(src){
-if(src==='d'){W.c=+$('w1').value;W.o=+$('w2').value;W.i=+$('w3').value;W.e=+$('w4').value;W.a=+$('w5').value;W.v=+$('w6').value}
-else if(src==='r'){W.c=+$('rw1').value;W.o=+$('rw2').value;W.i=+$('rw3').value;W.e=+$('rw4').value;W.a=+$('rw5').value;W.v=+$('rw6').value}
-syncAllW();ren()}
-function syncAllW(){
-var vals=[W.c,W.o,W.i,W.e,W.a,W.v];
-['1','2','3','4','5','6'].forEach(function(i,idx){
-$('w'+i).value=vals[idx];$('v'+i).textContent=vals[idx];
-$('rw'+i).value=vals[idx];$('rv'+i).textContent=vals[idx]});
-var s='Σ '+(W.c+W.o+W.i+W.e+W.a+W.v)+' → normalisé 100%';
-$('tW').textContent=s;$('rtW').textContent=s}
-function defW(){W={c:30,o:25,i:20,e:12,a:8,v:5};syncAllW();ren()}
-
+function toast(m,t){const e=$('toast');e.textContent=m;e.className='toast '+t+' sh';setTimeout(()=>e.classList.remove('sh'),3e3)}
 function pn(s){if(s===null||s===undefined)return null;if(typeof s==='number')return isNaN(s)?null:s;s=String(s).trim();if(!s||s==='—'||s==='Inexistant'||s==='?')return null;const v=+s.replace(/'/g,'').replace(/[\s\u00a0]/g,'').replace(',','.');return isNaN(v)?null:v}
 function pc(s){if(s===null||s===undefined)return null;if(typeof s==='number')return s>1?s/100:s;s=String(s).replace('%','').trim();const v=pn(s);return v!=null&&v>1?v/100:v}
+function extractNPA(a){if(!a)return null;const m=a.match(/\b(1[0-2]\d{2})\b/);return m?m[1]:null}
+function cleanAddress(a){if(!a)return'';return a.replace(/\(.*?\)/g,'').replace(/\[.*?\]/g,'').replace(/\s+/g,' ').trim()}
 function wN(){const t=W.c+W.o+W.i+W.e+W.a+W.v||1;return{c:W.c/t*100,o:W.o/t*100,i:W.i/t*100,e:W.e/t*100,a:W.a/t*100,v:W.v/t*100}}
 function getGlobalRP(){return $('gRP')?.value||'all'}
+function isProt(p){return p&&(p.includes('Classé')||p.includes('Zone protégée')||p.includes('Inventaire')||p.includes('Objets')||p.includes('Ensembles'))}
+function isFos(t){const f=(t||'').toLowerCase();return(f.includes('gaz')||f.includes('mazout'))&&!f.startsWith('pac')&&!f.startsWith('bois')&&!f.startsWith('cad')}
+function scCol(v){return v>=70?'#27ae60':v>=50?'#e67e22':v>=30?'#e74c3c':'#95a5a6'}
+
+/* --- Badges de rendu --- */
+function pBg(p){return'<span class="bg bg-p'+p+'">P'+p+'</span>'}
+function patBg(p){if(!p||p==='Non protégé')return'<span class="bg bg-np">—</span>';if(p.includes('Classé'))return'<span class="bg bg-cls">🏛</span>';if(p.includes('Zone'))return'<span class="bg bg-zpro">🛡</span>';if(p.includes('Inventaire'))return'<span class="bg bg-inv">📋</span>';if(p.includes('Objets'))return'<span class="bg bg-odi">⭐</span>';if(p.includes('Ensembles'))return'<span class="bg bg-ens">🏘</span>';return'<span class="bg bg-np">'+p+'</span>'}
+function hBg(t){const f=(t||'').toLowerCase();if(f.includes('mazout'))return'<span class="bg" style="background:#c0392b">🔥 Mazout</span>';if(f.includes('gaz')&&!f.includes('cad'))return'<span class="bg" style="background:#e67e22">🔥 Gaz</span>';if(f.includes('pac'))return'<span class="bg" style="background:#27ae60">♻️ PAC</span>';if(f.includes('bois')||f.includes('pellet'))return'<span class="bg" style="background:#27ae60">🌲 Bois</span>';if(f.includes('cad')||f.includes('cadiom'))return'<span class="bg" style="background:#2980b9">🔄 CAD</span>';return'<span class="bg" style="background:#bbb">?</span>'}
+function tiBg(v){if(!v&&v!==0)return'<span class="bg" style="background:#bbb">—</span>';v=Math.round(v);var cols={1:'#27ae60',2:'#f1c40f',3:'#e67e22',4:'#e74c3c'};return'<span class="bg" title="'+(TI_LABELS[v]||'')+'" style="background:'+(cols[v]||'#bbb')+';color:'+(v===2?'#333':'#fff')+'">T'+v+'</span>'}
+function complBg(s){const p=compl(s);const e=p>=80?'🟢':p>=50?'🟡':'🔴';return'<span title="'+p+'% complet" style="cursor:help">'+e+'</span>'}
+function fmtSRE(v){if(!v)return'—';return v.toLocaleString('fr-CH')}
+function fmtInv(v){if(!v||v<=0)return'—';if(v>=1e6)return(v/1e6).toFixed(1)+'M';return(v/1e3).toFixed(0)+'k'}
+function fmtIDCproj(v){if(!v&&v!==0)return'<span style="color:#aaa">—</span>';return'<span style="color:#27ae60;font-weight:600">'+v+'</span>'}
+
+/* --- ★ CECB+ : Trois états (vert / jaune / rouge) --- */
+function cecbState(raw){
+  var v=(raw||'').toString().trim();
+  if(/^var_[A-C]$/i.test(v))return'green';
+  if(v&&/en cours|à vérif|a verif|demandé|prio|^oui$/i.test(v))return'yellow';
+  return'red';
+}
+function getCecbIcon(raw){
+  var v=(raw||'').toString().trim();
+  if(/^var_[A-C]$/i.test(v))
+    return'<span class="bg" style="background:#27ae60" title="CECB+ validé · '+v+'">✔ '+v.replace(/var_/i,'')+'</span>';
+  if(v&&/en cours|à vérif|a verif|demandé|prio|^oui$/i.test(v))
+    return'<span class="bg" style="background:#f39c12" title="CECB+ '+v+'">⏳</span>';
+  return'<span class="bg" style="background:#e74c3c" title="CECB+ non disponible">✗</span>';
+}
+
+
+/* ================================================================
+   MODULE 3 : SCORING — Moteur de calcul des scores
+   ================================================================ */
+var TI_LABELS={1:'Suivi énergétique',2:'Entretien / renouvellement',3:'Gros travaux / rénovation partielle',4:'Rénovation complète'};
 
 function sC(s){const v=(1-(s.coeff||.7))*100;const r=s.rang?Math.max(0,100-s.rang/3):50;if(s.cecb&&s.invVB&&s.invVB>0&&s.idcVB!=null&&s.idcC){const g=s.idcC-s.idcVB;if(g>0){const c=s.invVB/(g*(s.sre||1000)*30);return Math.max(0,Math.min(100,100-c*40))}}return Math.min(100,v*.3+r*.7)}
 function sO(s){let sc=0;const f=(s.ht||'').toLowerCase();if(f.includes('mazout'))sc+=70;else if(f.includes('gaz')&&!f.includes('cad')&&!f.includes('pac'))sc+=55;else if(f.includes('gaz'))sc+=30;if(s.hsub&&String(s.hsub).length>2&&!/rien|maintien/i.test(s.hsub))sc+=15;return Math.min(100,sc)}
@@ -499,41 +506,49 @@ function sA(s){let sc=15;if(s.eau){if(s.eau>5000)sc+=35;else if(s.eau>1000)sc+=2
 function sV(s){const co=s.coeff!=null?s.coeff:0.7;return Math.min(100,Math.max(0,Math.round((1-co)*100)))}
 
 function calcTI(s){
-if(s.ti!=null&&s.ti>=1&&s.ti<=4)return s.ti;
-var idc=s.idcC||0,co=s.coeff!=null?s.coeff:0.7;
-var il=idc<80?0:idc<130?1:idc<200?2:3;
-var sl=co>=0.70?0:co>=0.50?1:co>=0.35?2:3;
-return[[1,1,2,2],[2,2,3,3],[2,3,3,4],[3,3,4,4]][il][sl]}
-
-var TI_LABELS={1:'Suivi énergétique',2:'Entretien / renouvellement',3:'Gros travaux / rénovation partielle',4:'Rénovation complète'};
-function tiBg(v){if(!v&&v!==0)return'<span class="bg" style="background:#bbb">—</span>';v=Math.round(v);var cols={1:'#27ae60',2:'#f1c40f',3:'#e67e22',4:'#e74c3c'};return'<span class="bg" title="'+(TI_LABELS[v]||'')+'" style="background:'+(cols[v]||'#bbb')+';color:'+(v===2?'#333':'#fff')+'">T'+v+'</span>'}
+  if(s.ti!=null&&s.ti>=1&&s.ti<=4)return s.ti;
+  var idc=s.idcC||0,co=s.coeff!=null?s.coeff:0.7;
+  var il=idc<80?0:idc<130?1:idc<200?2:3;
+  var sl=co>=0.70?0:co>=0.50?1:co>=0.35?2:3;
+  return[[1,1,2,2],[2,2,3,3],[2,3,3,4],[3,3,4,4]][il][sl];
+}
 
 function score(s){const w=wN();const sub={c:sC(s),o:sO(s),i:sI(s),e:sE(s),a:sA(s),v:sV(s)};const raw=(sub.c*w.c+sub.o*w.o+sub.i*w.i+sub.e*w.e+sub.a*w.a+sub.v*w.v)/100;let ph;if(raw>=65||(s.rang&&s.rang<=15&&(s.coeff||1)<.45))ph=1;else if(raw>=45||(s.cecb&&(s.coeff||1)<.55))ph=2;else if(raw>=30)ph=3;else ph=4;if((s.coeff||0)>=.92)ph=4;if(phaseOverrides[s.id])ph=phaseOverrides[s.id];const ti=calcTI(s);return{t:Math.round(raw*10)/10,sub,ph,ti}}
 
 function scored(rp,pat){let r=S.map(s=>({...s,sc:score(s)})).sort((a,b)=>b.sc.t-a.sc.t);if(rp&&rp!=='all')r=r.filter(s=>s.rp===rp);if(pat==='prot')r=r.filter(s=>isProt(s.pat));else if(pat==='nprot')r=r.filter(s=>!isProt(s.pat));else if(pat&&pat!=='all')r=r.filter(s=>(s.pat||'')===pat);return r}
 
-function isProt(p){return p&&(p.includes('Classé')||p.includes('Zone protégée')||p.includes('Inventaire')||p.includes('Objets')||p.includes('Ensembles'))}
-function isFos(t){const f=(t||'').toLowerCase();return(f.includes('gaz')||f.includes('mazout'))&&!f.startsWith('pac')&&!f.startsWith('bois')&&!f.startsWith('cad')}
-function scCol(v){return v>=70?'#27ae60':v>=50?'#e67e22':v>=30?'#e74c3c':'#95a5a6'}
-function pBg(p){return'<span class="bg bg-p'+p+'">P'+p+'</span>'}
-function patBg(p){if(!p||p==='Non protégé')return'<span class="bg bg-np">—</span>';if(p.includes('Classé'))return'<span class="bg bg-cls">🏛</span>';if(p.includes('Zone'))return'<span class="bg bg-zpro">🛡</span>';if(p.includes('Inventaire'))return'<span class="bg bg-inv">📋</span>';if(p.includes('Objets'))return'<span class="bg bg-odi">⭐</span>';if(p.includes('Ensembles'))return'<span class="bg bg-ens">🏘</span>';return'<span class="bg bg-np">'+p+'</span>'}
-function hBg(t){const f=(t||'').toLowerCase();if(f.includes('mazout'))return'<span class="bg" style="background:#c0392b">🔥 Mazout</span>';if(f.includes('gaz')&&!f.includes('cad'))return'<span class="bg" style="background:#e67e22">🔥 Gaz</span>';if(f.includes('pac'))return'<span class="bg" style="background:#27ae60">♻️ PAC</span>';if(f.includes('bois')||f.includes('pellet'))return'<span class="bg" style="background:#27ae60">🌲 Bois</span>';if(f.includes('cad')||f.includes('cadiom'))return'<span class="bg" style="background:#2980b9">🔄 CAD</span>';return'<span class="bg" style="background:#bbb">?</span>'}
-function fmtSRE(v){if(!v)return'—';return v.toLocaleString('fr-CH')}
-function fmtInv(v){if(!v||v<=0)return'—';if(v>=1e6)return(v/1e6).toFixed(1)+'M';return(v/1e3).toFixed(0)+'k'}
-function fmtIDCproj(v){if(!v&&v!==0)return'<span style="color:#aaa">—</span>';return'<span style="color:#27ae60;font-weight:600">'+v+'</span>'}
-
 function compl(s){let t=9,f=0;if(s.sre)f++;if(s.idcC)f++;if(s.ht&&s.ht.length>1)f++;if(s.coeff!=null)f++;if(s.invVB&&s.invVB>0)f++;if(s.hsub&&s.hsub.length>2&&!/rien|maintien/i.test(s.hsub))f++;if(s.pat&&s.pat.length>1)f++;if(s.elec)f++;if(s.eau)f++;return Math.round(f/t*100)}
-function complBg(s){const p=compl(s);const e=p>=80?'🟢':p>=50?'🟡':'🔴';return'<span title="'+p+'% complet" style="cursor:help">'+e+'</span>'}
 
 function patMalus(pat){if(!pat)return 0;if(pat.includes('Classé'))return -50;if(pat.includes('Zone protégée')||pat.includes('Zone prot'))return -40;if(pat.includes('Inventaire'))return -30;if(pat.includes('Ensembles'))return -20;if(pat.includes('Objets')||pat.includes("intérêt"))return -10;return 0}
 function feasib(s){let f=0;if(s.cecb)f+=33;if(s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub))f+=33;if(s.invVB&&s.invVB>0)f+=34;f+=patMalus(s.pat);return Math.max(0,Math.min(100,f))}
-function feasibBreak(s){let f=0,parts=[];if(s.cecb){f+=33;parts.push('CECB +33')}else parts.push('CECB 0');const hasSub=s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub);if(hasSub){f+=33;parts.push('Subst +33')}else parts.push('Subst 0');if(s.invVB&&s.invVB>0){f+=34;parts.push('Budget +34')}else parts.push('Budget 0');const pm=patMalus(s.pat);if(pm<0)parts.push('Patrimoine '+pm);f=Math.max(0,Math.min(100,f+pm));return{score:f,detail:parts.join(' · ')}}
+function feasibBreak(s){
+  let f=0,parts=[];
+  if(s.cecb){f+=33;var st=cecbState(s.cecbRaw);parts.push('CECB '+(st==='green'?'✔':'⏳')+' +33')}else parts.push('CECB ✗ 0');
+  const hasSub=s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub);
+  if(hasSub){f+=33;parts.push('Subst +33')}else parts.push('Subst 0');
+  if(s.invVB&&s.invVB>0){f+=34;parts.push('Budget +34')}else parts.push('Budget 0');
+  const pm=patMalus(s.pat);if(pm<0)parts.push('Patrimoine '+pm);
+  f=Math.max(0,Math.min(100,f+pm));return{score:f,detail:parts.join(' · ')};
+}
 
+/* ★ ALERTES — sensibles à l'état CECB+ (green / yellow / red)
+   L'alerte "CECB+ fait mais pas de substitution" ne se déclenche
+   que si le CECB+ est validé (green = var_A / var_B / var_C).
+   De plus, de nouvelles alertes CECB+ sont ajoutées :
+   – P1 sans CECB+ validé
+   – CECB+ en cours depuis longtemps (yellow) sur site P1/P2       */
 function detectAlerts(sites){const al=[];sites.forEach(s=>{
+var cSt=cecbState(s.cecbRaw);
+var noSub=(!s.hsub||s.hsub.length<3||/rien|maintien/i.test(s.hsub));
 if(s.idcC>150&&!isFos(s.ht)&&!s.ht.toLowerCase().includes('cad'))al.push({t:'warn',s,m:'IDC élevé ('+s.idcC+') mais chauffage non-fossile'});
 if((s.coeff||0)>=.92&&s.sc.ph===1)al.push({t:'err',s,m:'Stratus excellent ('+Math.round(s.coeff*100)+'%) mais classé P1'});
 if(s.sc.ph===1&&(!s.invVB||s.invVB<=0))al.push({t:'err',s,m:'Phase 1 mais investissement à 0'});
-if(s.cecb&&(!s.hsub||s.hsub.length<3||/rien|maintien/i.test(s.hsub)))al.push({t:'warn',s,m:'CECB+ fait mais pas de substitution prévue'});
+/* ★ CECB+ validé (green) sans substitution prévue */
+if(cSt==='green'&&noSub)al.push({t:'warn',s,m:'CECB+ validé ('+s.cecbRaw+') mais pas de substitution prévue'});
+/* ★ CECB+ en cours (yellow) sur P1/P2 — à accélérer */
+if(cSt==='yellow'&&s.sc.ph<=2)al.push({t:'warn',s,m:'CECB+ en cours (⏳) pour un site P'+s.sc.ph+' — à finaliser rapidement'});
+/* ★ P1 sans CECB+ du tout */
+if(cSt==='red'&&s.sc.ph===1)al.push({t:'err',s,m:'Phase 1 sans CECB+ — audit à lancer en urgence'});
 if((s.coeff||1)<.4&&s.sc.ph===4)al.push({t:'warn',s,m:'Très vétuste ('+Math.round((s.coeff||0)*100)+'%) mais en P4'});
 var ti=s.sc.ti;
 if(ti===4&&s.sc.ph>=3)al.push({t:'err',s,m:'Rénovation complète nécessaire (T4) mais planifié en P'+s.sc.ph+' — devrait être P1 ou P2'});
@@ -542,23 +557,117 @@ if(ti===3&&s.sc.ph===4)al.push({t:'warn',s,m:'Gros travaux recommandés (T3) mai
 if(ti===2&&s.sc.ph===1)al.push({t:'warn',s,m:'Entretien courant (T2) mais classé P1'});
 });return al}
 
-function popRP(){const s=new Set();S.forEach(si=>{if(si.rp)s.add(si.rp)});const sorted=[...s].sort();const el=$('gRP');const cur=el.value;el.innerHTML='<option value="all">Tous les RP</option>';sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});el.value=cur||'all'}
 
-function popRPProject(){
-  const s=new Set();S.forEach(si=>{if(si.drt)s.add(si.drt)});
-  const sorted=[...s].sort();
-  const el=$('fRpj'); if(!el) return;
-  const cur=el.value;
-  el.innerHTML='<option value="all">Responsable projet : tous</option>';
-  sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});
-  el.value=cur||'all';
+/* ================================================================
+   MODULE 4 : IMPORT / EXPORT — Fichiers, parsing, import, export
+   ================================================================ */
+function fc(h,ns){
+  for(const n of ns){
+    const nt=n.toLowerCase().replace(/[\s\n\r\u00a0\-_'"()\[\]\/\.]/g,'');
+    const idx=h.findIndex(x=>{
+      const xt=x.toLowerCase().replace(/[\s\n\r\u00a0\-_'"()\[\]\/\.]/g,'');
+      if(nt.length<=2) return xt===nt;
+      return xt.includes(nt);
+    });
+    if(idx>=0) return idx;
+  }
+  return -1;
+}
+function gv(row,idx){if(idx<0||!row||idx>=row.length)return'';const v=row[idx];return(v===null||v===undefined||v==='')?'':String(v)}
+function gvr(row,idx){if(idx<0||!row||idx>=row.length)return null;const v=row[idx];return(v===null||v===undefined||v==='')?null:v}
+
+function parseCSVtoRows(t){const fl=t.split('\n')[0]||'';const sep=(fl.split(';').length>=fl.split(',').length)?';':',';const rows=[];let row=[];let cur='';let inQ=false;for(let i=0;i<t.length;i++){const ch=t[i];if(ch==='"'){if(inQ&&t[i+1]==='"'){cur+='"';i++}else inQ=!inQ}else if(ch===sep&&!inQ){row.push(cur.trim());cur=''}else if(ch==='\n'&&!inQ){row.push(cur.trim());if(row.length>3)rows.push(row);row=[];cur=''}else if(ch==='\r'){}else cur+=ch}if(row.length>3){row.push(cur.trim());rows.push(row)}return rows}
+function xlsxToRows(buf){const d=new Uint8Array(buf);const wb=XLSX.read(d,{type:'array'});let bs=wb.SheetNames[0],bc=0;for(const n of wb.SheetNames){const s=wb.Sheets[n];if(!s['!ref'])continue;const r=XLSX.utils.decode_range(s['!ref']);const c=r.e.c-r.s.c+1;if(c>bc){bc=c;bs=n}}return XLSX.utils.sheet_to_json(wb.Sheets[bs],{header:1,defval:'',raw:true,blankrows:false})}
+
+function importFromRows(rows){
+  if(rows.length<2)return[];const h=rows[0].map(v=>String(v||'').trim());
+  const c={
+    id:   fc(h,['N° sous site','nsoussite','N°soussite','N°']),
+    nom:  fc(h,['Nom du site_AB','Nomdusite','Nom du site']),
+    adr:  fc(h,['Adresse','Adresse du site','Lieu']),
+    rang: fc(h,['Rang actuel','Rang']),
+    coeff:fc(h,['Coeff Stratus','CoeffStratus']),
+    sre:  fc(h,['SRE corrigée','SREcorrigée','SRE']),
+    idcC: fc(h,['IDC corrigé','IDCcorrigé','IDC corrige']),
+    agent:fc(h,['Agent']),
+    pat:  fc(h,['Classement au Patrimoine','Patrimoine']),
+    elec: fc(h,['Conso Elec','ConsoElec']),
+    eau:  fc(h,['Conso Eau','ConsoEau']),
+    consoTherm:fc(h,['Conso Therm','ConsoTherm']),
+    co2:  fc(h,['Co2 2025','Co2 2024','kgCo2','Co2']),
+    clIDC:fc(h,['Classe IDC','ClasseIDC']),
+    clVet:fc(h,['Classe Vétusté','ClasseVetuste']),
+    fp:   fc(h,['Facteur protection','Facteurprotection']),
+    ti:   fc(h,["Type d'intervention","TypeIntervention","Type_intervention","Typeintervention","Type intervention"]),
+    rp:   fc(h,['Responsables Portefeuille','Responsable Portefeuille','ResponsablesPortefeuille','ResponsablePortefeuille','Resp Portefeuille','RP']),
+    drt:  fc(h,['Responsable DRT/DCO','Responsable DRT DCO','ResponsableDRTDCO']),
+    cecb: fc(h,['Audit CECB','AuditCECB','CECB']),
+    ht:   fc(h,['Chauffage Type Energie','ChauffageTypeEnergie','Chauffage Type']),
+    hsub: fc(h,['Chauffage de subsitution','Chauffage de substitution','substitution']),
+    idcVB:fc(h,['IDC projeté','IDCprojeté']),
+    invVB:fc(h,['Invest ImmOBA','InvestImmOBA','Invest VB','Invest']),
+    lat:  fc(h,['Latitude','Lat','GPS_Lat','YCOOR']),
+    lng:  fc(h,['Longitude','Long','Lng','GPS_Lng','XCOOR','lon']),
+    notes:fc(h,['Notes','Commentaires','Remarques'])
+  };
+  console.log('[PTE] Column mapping:', JSON.stringify(c));
+  console.log('[PTE] Headers:', h.join(' | '));
+
+  const hasGPS=c.lat>=0&&c.lng>=0;const adrCol=c.adr>=0?c.adr:2;let fgc=0;const sites=[];
+  for(let r=1;r<rows.length;r++){const R=rows[r];if(!R||R.length<5)continue;
+    const rpV=gv(R,c.rp);
+    if(!rpV||rpV.toLowerCase().includes('hors p\u00e9rim\u00e8tre')||rpV.toLowerCase().includes('hors perimetre'))continue;
+    const id=gv(R,c.id);if(!id||id.length<2)continue;
+    const coeff=pc(gvr(R,c.coeff));
+    const cecbStr=gv(R,c.cecb);
+    const hasCECB=cecbStr&&(/var_|en cours|à vérif|a verif|demandé|prio\s*\d|^oui$/i.test(cecbStr));
+    const htVal=gv(R,c.ht)||gv(R,c.agent)||'';
+    let fLat=null,fLng=null,fQ='none';
+    if(hasGPS){const rLat=pn(gvr(R,c.lat)),rLng=pn(gvr(R,c.lng));if(rLat&&rLng&&Math.abs(rLat)>1&&Math.abs(rLng)>0.01){fLat=rLat;fLng=rLng;fQ='file';fgc++}}
+    if(c.notes>=0){const n=gv(R,c.notes);if(n)siteNotes[id]=n}
+    sites.push({id,nom:(gv(R,c.nom)||'').replace(/\s*-\s*\(.*/,'').substring(0,55),adr:gv(R,adrCol),rp:rpV.trim(),drt:(gv(R,c.drt)||'').trim(),rang:pn(gvr(R,c.rang)),coeff,sre:pn(gvr(R,c.sre)),idcC:pn(gvr(R,c.idcC)),pat:gv(R,c.pat)||'',fp:pn(gvr(R,c.fp)),ti:pn(gvr(R,c.ti)),clIDC:pn(gvr(R,c.clIDC)),clVet:pn(gvr(R,c.clVet)),elec:pn(gvr(R,c.elec)),eau:pn(gvr(R,c.eau)),consoTherm:pn(gvr(R,c.consoTherm)),co2:pn(gvr(R,c.co2)),ht:htVal,hsub:gv(R,c.hsub),cecb:hasCECB,cecbRaw:cecbStr||'',idcVB:pn(gvr(R,c.idcVB)),invVB:pn(gvr(R,c.invVB)),lat:fLat,lng:fLng,geoQ:fQ,geoFallback:fQ==='none'});
+  }
+  return sites;
 }
 
-function ren(){renD();renR();renP();renM()}
+function handleFileImport(e){const f=e.target.files[0];if(!f)return;lastFileHandle=f;lastFileName=f.name;processFile(f)}
+function processFile(f){const ext=f.name.split('.').pop().toLowerCase();const reader=new FileReader();if(ext==='xlsx'||ext==='xls'){reader.onload=function(ev){try{finishImport(xlsxToRows(ev.target.result),f.name)}catch(er){toast('⚠️ '+er.message,'wr')}};reader.readAsArrayBuffer(f)}else{reader.onload=function(ev){try{finishImport(parseCSVtoRows(ev.target.result),f.name)}catch(er){toast('⚠️ '+er.message,'wr')}};reader.readAsText(f,'UTF-8')}}
+function finishImport(rows,source){const si=importFromRows(rows);if(!si?.length){toast('⚠️ Aucun site importé (vérifiez la colonne RP)','wr');return}S=si;phaseOverrides={};detectGeoContext();assignFallbackCoords();if(mapReady&&lMap)lMap.setView([geoCtx.lat,geoCtx.lng],12);popRP();popRPProject();syncAllW();ren();const fg=S.filter(s=>s.geoQ==='file').length;updateSourceInfo(si.length,source,'file');$('btnRefresh').style.display='inline-block';toast('✅ '+si.length+' sites · 📍 '+fg+' GPS','ok');if(fg<S.length)geocodeSites()}
+function refreshData(){if(lastFileHandle){processFile(lastFileHandle);toast('🔄','nf')}else toast('⚠️ Aucun fichier','wr')}
+function updateSourceInfo(count,source,type){const badge=$('srcBadge');if(type==='file'){badge.className='src-indicator src-file';badge.textContent='📄 '+count+' sites — '+(lastFileName||source)}else{badge.className='src-indicator src-none';badge.textContent='⚠ Données échantillon'}}
 
+function exportGeoCSV(){
+  const sc=scored();let c='N°;Nom;Adresse;RP;Responsable projet;Patrimoine;Score;Type_intervention;Phase;Coeff;SRE;IDC;IDC projeté;Chauffage;Substitution;CECB;Invest ImmOBA;Complétude;Faisabilité;Notes;Latitude;Longitude;Geo_Source\n';
+  sc.forEach(s=>{const lat=(s.lat&&s.geoQ!=='npa')?s.lat.toFixed(6):'';const lng=(s.lng&&s.geoQ!=='npa')?s.lng.toFixed(6):'';const src=s.geoQ==='file'?'fichier':s.geoQ==='nominatim'?'nominatim':'';const note=(siteNotes[s.id]||'').replace(/;/g,',').replace(/\n/g,' ');
+  c+=s.id+';'+s.nom+';'+(s.adr||'')+';'+(s.rp||'')+';'+(s.drt||'')+';'+(s.pat||'')+';'+s.sc.t+';'+s.sc.ti+';'+s.sc.ph+';'+(s.coeff||'')+';'+(s.sre||'')+';'+(s.idcC||'')+';'+(s.idcVB||'')+';'+(s.ht||'')+';'+(s.hsub||'')+';'+(s.cecbRaw||(s.cecb?'Oui':'Non'))+';'+(s.invVB||'')+';'+compl(s)+'%;'+feasib(s)+';'+note+';'+lat+';'+lng+';'+src+'\n'});
+  const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='priorisation_PTE_geocode.csv';a.click();toast('📥 Export terminé','ok');
+}
+
+function exportAlerts(){
+  if(!lastAlerts||!lastAlerts.length){toast('✅ Aucune alerte à exporter','nf');return}
+  let c='Type;N°;Site;Phase;Score;TI;CECB;Message\n';
+  lastAlerts.forEach(a=>{c+=(a.t==='err'?'Erreur':'Avertissement')+';'+a.s.id+';'+a.s.nom.replace(/;/g,',')+';P'+a.s.sc.ph+';'+a.s.sc.t+';T'+a.s.sc.ti+';'+cecbState(a.s.cecbRaw)+';'+a.m.replace(/;/g,',')+'\n'});
+  const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='alertes_anomalies_PTE.csv';a.click();toast('📥 '+lastAlerts.length+' alertes exportées','ok');
+}
+
+
+/* ================================================================
+   MODULE 5 : DASHBOARD — KPIs, graphiques, alertes
+   ================================================================ */
 function renD(){
 const rp=getGlobalRP();const all=scored(rp);const n=all.length;
-$('k1').textContent=n;$('k2').textContent=all.filter(s=>isFos(s.ht)).length;$('k3').textContent=all.filter(s=>isProt(s.pat)).length;$('k4').textContent=all.filter(s=>s.cecb).length;$('k5').textContent=all.filter(s=>s.sc.ph===1).length;
+$('k1').textContent=n;
+$('k2').textContent=all.filter(s=>isFos(s.ht)).length;
+$('k3').textContent=all.filter(s=>isProt(s.pat)).length;
+
+/* ★ CECB+ trois états */
+var cG=all.filter(function(s){return cecbState(s.cecbRaw)==='green'}).length;
+var cY=all.filter(function(s){return cecbState(s.cecbRaw)==='yellow'}).length;
+var cR=n-cG-cY;
+$('k4').innerHTML='<span style="color:#27ae60">'+cG+'</span><span style="font-size:.85rem;color:#ccc"> · </span><span style="color:#f39c12;font-size:1.2rem">'+cY+'</span><span style="font-size:.85rem;color:#ccc"> · </span><span style="color:#e74c3c;font-size:1.2rem">'+cR+'</span>';
+$('k4l').innerHTML='CECB+ <span style="color:#27ae60">✔</span>·<span style="color:#f39c12">⏳</span>·<span style="color:#e74c3c">✗</span>';
+
+$('k5').textContent=all.filter(s=>s.sc.ph===1).length;
 const inv=all.reduce((a,s)=>a+(s.invVB||0),0);$('k6').textContent=inv>0?(inv/1e6).toFixed(1):'N/D';
 try{
 Plotly.newPlot('gHist',[{x:all.map(s=>s.sc.t),type:'histogram',marker:{color:'#2d6a9f'},nbinsx:15}],{margin:{t:5,b:28,l:35,r:5},bargap:.2,xaxis:{title:{text:'Score',font:{size:10}}},yaxis:{title:{text:'Nb',font:{size:10}}},paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{size:9}},{responsive:true,displayModeBar:false});
@@ -581,11 +690,12 @@ $('alCount').textContent=al.length?'('+al.length+')':'';
 if(!al.length){$('alList').innerHTML='<p style="color:#27ae60;font-size:.78rem">✅ Aucune anomalie détectée.</p>';return}
 $('alList').innerHTML=al.map(a=>'<div class="alert-card al-'+(a.t==='err'?'err':'warn')+'"><span>'+(a.t==='err'?'🔴':'🟠')+'</span><div><b>'+a.s.id+'</b> '+a.s.nom.substring(0,30)+' — '+a.m+'</div></div>').join('')}
 
-function exportAlerts(){
-if(!lastAlerts||!lastAlerts.length){toast('✅ Aucune alerte à exporter','nf');return}
-let c='Type;N°;Site;Phase;Score;TI;Message\n';
-lastAlerts.forEach(a=>{c+=(a.t==='err'?'Erreur':'Avertissement')+';'+a.s.id+';'+a.s.nom.replace(/;/g,',')+';P'+a.s.sc.ph+';'+a.s.sc.t+';T'+a.s.sc.ti+';'+a.m.replace(/;/g,',')+'\n'});
-const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='alertes_anomalies_PTE.csv';a.click();toast('📥 '+lastAlerts.length+' alertes exportées','ok')}
+
+/* ================================================================
+   MODULE 6 : CLASSEMENT — Tableau, détail radar, notes
+   ================================================================ */
+function popRP(){const s=new Set();S.forEach(si=>{if(si.rp)s.add(si.rp)});const sorted=[...s].sort();const el=$('gRP');const cur=el.value;el.innerHTML='<option value="all">Tous les RP</option>';sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});el.value=cur||'all'}
+function popRPProject(){const s=new Set();S.forEach(si=>{if(si.drt)s.add(si.drt)});const sorted=[...s].sort();const el=$('fRpj');if(!el)return;const cur=el.value;el.innerHTML='<option value="all">Responsable projet : tous</option>';sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});el.value=cur||'all'}
 
 function renR(){
 expandedRow=null;
@@ -595,25 +705,28 @@ if(ph!=='all')f=f.filter(s=>s.sc.ph===+ph);
 if(fo==='fos')f=f.filter(s=>isFos(s.ht));if(fo==='ren')f=f.filter(s=>{const t=(s.ht||'').toLowerCase();return t.includes('pac')||t.includes('bois')||t.includes('cad')});
 if(rpj!=='all')f=f.filter(s=>(s.drt||'')===rpj);
 if(se)f=f.filter(s=>(s.id+s.nom+(s.rp||'')+(s.drt||'')+(s.hsub||'')+(s.pat||'')+(s.adr||'')).toLowerCase().includes(se));
-$('rB').innerHTML=f.map((s,i)=>'<tr class="row-click" data-id="'+s.id+'" onclick="toggleDetail(\''+s.id+'\')"><td><b>'+(i+1)+'</b></td><td><b>'+s.id+'</b></td><td>'+s.nom+'<br><span style="color:#888;font-size:.63rem">'+(s.rp||'—')+'</span></td><td style="font-size:.63rem">'+(s.drt||'—')+'</td><td>'+patBg(s.pat)+'</td><td><div class="sb"><div class="sf" style="width:'+s.sc.t+'%;background:'+scCol(s.sc.t)+'">'+s.sc.t+'</div></div></td><td>'+tiBg(s.sc.ti)+'</td><td>'+pBg(s.sc.ph)+'</td><td style="color:'+((s.coeff||1)<.5?'#e74c3c':(s.coeff||1)<.7?'#e67e22':'#27ae60')+'">'+(s.coeff?Math.round(s.coeff*100)+'%':'?')+'</td><td>'+fmtSRE(s.sre)+'</td><td>'+(s.idcC||'—')+'</td><td>'+fmtIDCproj(s.idcVB)+'</td><td>'+hBg(s.ht)+'</td><td style="font-size:.63rem">'+(s.hsub||'—')+'</td><td>'+(s.cecb?'<span class="bg" style="background:#27ae60">✓</span>':'<span class="bg" style="background:#e74c3c">✗</span>')+'</td><td>'+fmtInv(s.invVB)+'</td><td>'+complBg(s)+'</td></tr>').join('')}
+$('rB').innerHTML=f.map((s,i)=>'<tr class="row-click" data-id="'+s.id+'" onclick="toggleDetail(\''+s.id+'\')"><td><b>'+(i+1)+'</b></td><td><b>'+s.id+'</b></td><td>'+s.nom+'<br><span style="color:#888;font-size:.63rem">'+(s.rp||'—')+'</span></td><td style="font-size:.63rem">'+(s.drt||'—')+'</td><td>'+patBg(s.pat)+'</td><td><div class="sb"><div class="sf" style="width:'+s.sc.t+'%;background:'+scCol(s.sc.t)+'">'+s.sc.t+'</div></div></td><td>'+tiBg(s.sc.ti)+'</td><td>'+pBg(s.sc.ph)+'</td><td style="color:'+((s.coeff||1)<.5?'#e74c3c':(s.coeff||1)<.7?'#e67e22':'#27ae60')+'">'+(s.coeff?Math.round(s.coeff*100)+'%':'?')+'</td><td>'+fmtSRE(s.sre)+'</td><td>'+(s.idcC||'—')+'</td><td>'+fmtIDCproj(s.idcVB)+'</td><td>'+hBg(s.ht)+'</td><td style="font-size:.63rem">'+(s.hsub||'—')+'</td><td>'+getCecbIcon(s.cecbRaw)+'</td><td>'+fmtInv(s.invVB)+'</td><td>'+complBg(s)+'</td></tr>').join('')}
 
 function toggleDetail(id){
 const prev=document.getElementById('detRow');if(prev)prev.remove();
 const prevId=expandedRow;expandedRow=null;
 document.querySelectorAll('tr.row-expanded').forEach(r=>r.classList.remove('row-expanded'));
-if(prevId===id)return;
-expandedRow=id;
+if(prevId===id)return;expandedRow=id;
 const site=S.find(s=>s.id===id);if(!site)return;
 const sc=score(site);const cp=compl(site);const fb=feasibBreak(site);
 const row=document.querySelector('tr[data-id="'+id+'"]');if(!row)return;
 row.classList.add('row-expanded');
 const det=document.createElement('tr');det.id='detRow';
-det.innerHTML='<td colspan="17" class="detail-td"><div style="display:grid;grid-template-columns:230px 1fr;gap:14px"><div id="detRadar" style="height:240px;min-width:200px"></div><div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"><div style="text-align:center;background:#eaf2f8;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#1a5276">'+Math.round(sc.sub.c)+'</div><div style="font-size:.62rem;color:#555">CEE</div></div><div style="text-align:center;background:#fdecea;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#c0392b">'+Math.round(sc.sub.o)+'</div><div style="font-size:.62rem;color:#555">CO₂</div></div><div style="text-align:center;background:#fef5e7;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#e67e22">'+Math.round(sc.sub.i)+'</div><div style="font-size:.62rem;color:#555">IDC</div></div><div style="text-align:center;background:#f4ecf7;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#7d3c98">'+Math.round(sc.sub.e)+'</div><div style="font-size:.62rem;color:#555">Élec</div></div><div style="text-align:center;background:#eafaf1;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#1e8449">'+Math.round(sc.sub.a)+'</div><div style="font-size:.62rem;color:#555">Eau</div></div><div style="text-align:center;background:#f2f3f4;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#7f8c8d">'+Math.round(sc.sub.v)+'</div><div style="font-size:.62rem;color:#555">Vétusté</div></div></div><div style="display:flex;gap:10px;font-size:.73rem;margin-bottom:6px;flex-wrap:wrap"><span>📊 Complétude : <b>'+cp+'%</b> '+(cp>=80?'🟢':cp>=50?'🟡':'🔴')+'</span><span>🎯 Faisabilité : <b>'+fb.score+'</b>/100 <span style="font-size:.63rem;color:#888">('+fb.detail+')</span></span></div><div style="display:flex;gap:10px;font-size:.73rem;margin-bottom:8px;flex-wrap:wrap"><span>🔧 Intervention : '+tiBg(sc.ti)+' <span style="color:#555;font-size:.68rem">'+(TI_LABELS[sc.ti]||'')+'</span></span></div><div style="font-size:.75rem;margin-bottom:4px;font-weight:600;color:var(--pri)">📝 Notes / Commentaires :</div><textarea id="noteTA" onblur="saveNote(\''+id+'\')" style="width:100%;height:60px;border:1px solid #cbd5e0;border-radius:6px;padding:6px;font-size:.76rem;resize:vertical">'+(siteNotes[id]||'')+'</textarea></div></div></td>';
+det.innerHTML='<td colspan="17" class="detail-td"><div style="display:grid;grid-template-columns:230px 1fr;gap:14px"><div id="detRadar" style="height:240px;min-width:200px"></div><div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"><div style="text-align:center;background:#eaf2f8;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#1a5276">'+Math.round(sc.sub.c)+'</div><div style="font-size:.62rem;color:#555">CEE</div></div><div style="text-align:center;background:#fdecea;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#c0392b">'+Math.round(sc.sub.o)+'</div><div style="font-size:.62rem;color:#555">CO₂</div></div><div style="text-align:center;background:#fef5e7;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#e67e22">'+Math.round(sc.sub.i)+'</div><div style="font-size:.62rem;color:#555">IDC</div></div><div style="text-align:center;background:#f4ecf7;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#7d3c98">'+Math.round(sc.sub.e)+'</div><div style="font-size:.62rem;color:#555">Élec</div></div><div style="text-align:center;background:#eafaf1;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#1e8449">'+Math.round(sc.sub.a)+'</div><div style="font-size:.62rem;color:#555">Eau</div></div><div style="text-align:center;background:#f2f3f4;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#7f8c8d">'+Math.round(sc.sub.v)+'</div><div style="font-size:.62rem;color:#555">Vétusté</div></div></div><div style="display:flex;gap:10px;font-size:.73rem;margin-bottom:6px;flex-wrap:wrap"><span>📊 Complétude : <b>'+cp+'%</b> '+(cp>=80?'🟢':cp>=50?'🟡':'🔴')+'</span><span>🎯 Faisabilité : <b>'+fb.score+'</b>/100 <span style="font-size:.63rem;color:#888">('+fb.detail+')</span></span></div><div style="display:flex;gap:10px;font-size:.73rem;margin-bottom:4px;flex-wrap:wrap"><span>🔧 Intervention : '+tiBg(sc.ti)+' <span style="color:#555;font-size:.68rem">'+(TI_LABELS[sc.ti]||'')+'</span></span><span>📄 CECB+ : '+getCecbIcon(site.cecbRaw)+'</span></div><div style="font-size:.75rem;margin-bottom:4px;font-weight:600;color:var(--pri)">📝 Notes / Commentaires :</div><textarea id="noteTA" onblur="saveNote(\''+id+'\')" style="width:100%;height:60px;border:1px solid #cbd5e0;border-radius:6px;padding:6px;font-size:.76rem;resize:vertical">'+(siteNotes[id]||'')+'</textarea></div></div></td>';
 row.after(det);
 setTimeout(()=>{try{Plotly.newPlot('detRadar',[{type:'scatterpolar',r:[sc.sub.c,sc.sub.o,sc.sub.i,sc.sub.e,sc.sub.a,sc.sub.v],theta:['CEE','CO₂','IDC','Élec','Eau','Vétusté'],fill:'toself',fillcolor:'rgba(45,106,159,0.2)',line:{color:'#2d6a9f',width:2},marker:{size:5}}],{polar:{radialaxis:{range:[0,100],tickfont:{size:8},gridcolor:'#e2e8f0'},angularaxis:{tickfont:{size:9}}},margin:{t:30,b:20,l:50,r:50},paper_bgcolor:'transparent',showlegend:false,font:{size:9}},{responsive:true,displayModeBar:false})}catch(e){}},100)}
 
 function saveNote(id){const ta=$('noteTA');if(ta)siteNotes[id]=ta.value;toast('💾 Note sauvegardée','ok')}
 
+
+/* ================================================================
+   MODULE 7 : PHASAGE — Gantt interactif & listes de phases
+   ================================================================ */
 const phColors={1:'#e74c3c',2:'#e67e22',3:'#3498db',4:'#95a5a6'};
 const phPos=[{l:0,w:16.67},{l:16.67,w:25},{l:41.67,w:25},{l:66.67,w:33.33}];
 
@@ -637,286 +750,170 @@ h+='<div class="g-bar" data-id="'+s.id+'" data-ph="'+ph+'" onmousedown="ganttSta
 h+='</div></div>'});
 $('ganttInner').innerHTML=h}
 
-function ganttStart(e,id){
-e.preventDefault();const bar=e.target.closest('.g-bar');if(!bar)return;
-const track=bar.parentElement;const rect=track.getBoundingClientRect();
-dragState={id,bar,track,rect};bar.style.opacity='.6';bar.style.zIndex='10'}
+function ganttStart(e,id){e.preventDefault();const bar=e.target.closest('.g-bar');if(!bar)return;const track=bar.parentElement;const rect=track.getBoundingClientRect();dragState={id,bar,track,rect};bar.style.opacity='.6';bar.style.zIndex='10'}
 document.addEventListener('mousemove',function(e){if(!dragState)return;const{bar,rect}=dragState;const pct=Math.max(0,Math.min(100,(e.clientX-rect.left)/rect.width*100));let ph;if(pct<16.67)ph=1;else if(pct<41.67)ph=2;else if(pct<66.67)ph=3;else ph=4;const pos=phPos[ph-1];bar.style.left=pos.l+'%';bar.style.width=pos.w+'%';bar.style.background=phColors[ph];bar.dataset.ph=ph});
 document.addEventListener('mouseup',function(){if(!dragState)return;const{id,bar}=dragState;const ph=parseInt(bar.dataset.ph);phaseOverrides[id]=ph;bar.style.opacity='1';bar.style.zIndex='2';dragState=null;renP();toast('📅 '+id+' → Phase '+ph,'nf')});
 
+
 /* ================================================================
-   MAP — 8 TILE PROVIDERS + auto-fallback
+   MODULE 8 : CARTE — Leaflet, tuiles, géocodage, markers
    ================================================================ */
-var TILE_PROVIDERS = [
-  {name:'🌍 Esri World Street',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',attr:'© Esri · Sources: Esri, HERE, Garmin, USGS',maxZoom:18},
-  {name:'🏔️ Esri World Topo',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',attr:'© Esri · Sources: Esri, HERE, Garmin, USGS',maxZoom:18},
-  {name:'🛰️ Esri Satellite',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',attr:'© Esri · Sources: Esri, Maxar, Earthstar',maxZoom:18},
-  {name:'🗺️ CARTO Voyager',url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',attr:'© <a href="https://www.openstreetmap.org/copyright">OSM</a> · © <a href="https://carto.com/">CARTO</a>',sub:'abcd',maxZoom:19},
-  {name:'⬜ CARTO Positron',url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',attr:'© OSM · © CARTO',sub:'abcd',maxZoom:19},
-  {name:'⬛ CARTO Dark',url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',attr:'© OSM · © CARTO',sub:'abcd',maxZoom:19},
-  {name:'🟢 OpenStreetMap',url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',attr:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19},
-  {name:'🏔️ OpenTopoMap',url:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',attr:'© OpenTopoMap · © OSM',sub:'abc',maxZoom:17}
+var TILE_PROVIDERS=[
+{name:'🌍 Esri World Street',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',attr:'© Esri · Sources: Esri, HERE, Garmin, USGS',maxZoom:18},
+{name:'🏔️ Esri World Topo',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',attr:'© Esri · Sources: Esri, HERE, Garmin, USGS',maxZoom:18},
+{name:'🛰️ Esri Satellite',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',attr:'© Esri · Sources: Esri, Maxar, Earthstar',maxZoom:18},
+{name:'🗺️ CARTO Voyager',url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',attr:'© <a href="https://www.openstreetmap.org/copyright">OSM</a> · © <a href="https://carto.com/">CARTO</a>',sub:'abcd',maxZoom:19},
+{name:'⬜ CARTO Positron',url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',attr:'© OSM · © CARTO',sub:'abcd',maxZoom:19},
+{name:'⬛ CARTO Dark',url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',attr:'© OSM · © CARTO',sub:'abcd',maxZoom:19},
+{name:'🟢 OpenStreetMap',url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',attr:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19},
+{name:'🏔️ OpenTopoMap',url:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',attr:'© OpenTopoMap · © OSM',sub:'abc',maxZoom:17}
 ];
 var currentTileIdx=0,tileLayer=null;
 var tileFailoverOrder=[3,0,1,6,4,5,2,7];
 var tileTried=new Set();
 var tileLoadTimer=null;
 
-function patchTileImages(){
-  var el=document.getElementById('leafMap');if(!el)return;
-  var imgs=el.getElementsByTagName('img');
-  for(var i=0;i<imgs.length;i++){
-    var s=imgs[i].style;
-    s.setProperty('max-width','none','important');
-    s.setProperty('max-height','none','important');
-    s.setProperty('padding','0','important');
-    s.setProperty('border','none','important');
-    s.setProperty('border-radius','0','important');
-    s.setProperty('box-shadow','none','important');
-  }
-}
+function patchTileImages(){var el=document.getElementById('leafMap');if(!el)return;var imgs=el.getElementsByTagName('img');for(var i=0;i<imgs.length;i++){var s=imgs[i].style;s.setProperty('max-width','none','important');s.setProperty('max-height','none','important');s.setProperty('padding','0','important');s.setProperty('border','none','important');s.setProperty('border-radius','0','important');s.setProperty('box-shadow','none','important')}}
 function setTileStatus(kind,txt){var ts=$('tileStatus');if(!ts)return;ts.className='tile-status '+kind;ts.textContent=txt}
-function tryTileFallback(reason){
-  var next=tileFailoverOrder.find(function(i){return !tileTried.has(i)});
-  if(next===undefined){setTileStatus('tile-err','❌ Aucun fond accessible');$('mapWarn').textContent='⚠️ Aucun fournisseur de tuiles joignable depuis ce contexte réseau.';return}
-  tileTried.add(next);$('tileSelect').value=String(next);addTileLayer(next,{autoFallback:true,reason:reason});
-}
+function tryTileFallback(reason){var next=tileFailoverOrder.find(function(i){return !tileTried.has(i)});if(next===undefined){setTileStatus('tile-err','❌ Aucun fond accessible');$('mapWarn').textContent='⚠️ Aucun fournisseur de tuiles joignable depuis ce contexte réseau.';return}tileTried.add(next);$('tileSelect').value=String(next);addTileLayer(next,{autoFallback:true,reason:reason})}
 
 function initMap(){
-  if(mapReady)return;
-  if(typeof L==='undefined'){$('mapWarn').innerHTML='⚠️ <b>Leaflet non chargé.</b>';return}
-  try{
-    lMap=L.map('leafMap',{zoomControl:true,scrollWheelZoom:true}).setView([geoCtx.lat,geoCtx.lng],12);
-    var defIdx=+($('tileSelect').value||3);
-    tileTried=new Set([defIdx]);
-    addTileLayer(defIdx,{manual:true});
-    lMarkers=L.layerGroup().addTo(lMap);
-    var leg=L.control({position:'bottomright'});
-    leg.onAdd=function(){var d=L.DomUtil.create('div','map-legend');d.innerHTML='<b>Phases</b><br><i style="background:#e74c3c"></i> P1<br><i style="background:#e67e22"></i> P2<br><i style="background:#3498db"></i> P3<br><i style="background:#95a5a6"></i> P4';return d};
-    leg.addTo(lMap);
-    mapReady=true;
-    lMap.on('layeradd',patchTileImages);
-    lMap.on('moveend',patchTileImages);
-    lMap.on('zoomend',patchTileImages);
-    window.addEventListener('resize',function(){if(!lMap)return;lMap.invalidateSize();patchTileImages()});
-  }catch(e){$('mapWarn').textContent='⚠️ '+e.message}
-}
+if(mapReady)return;if(typeof L==='undefined'){$('mapWarn').innerHTML='⚠️ <b>Leaflet non chargé.</b>';return}
+try{
+lMap=L.map('leafMap',{zoomControl:true,scrollWheelZoom:true}).setView([geoCtx.lat,geoCtx.lng],12);
+var defIdx=+($('tileSelect').value||3);tileTried=new Set([defIdx]);addTileLayer(defIdx,{manual:true});
+lMarkers=L.layerGroup().addTo(lMap);
+var leg=L.control({position:'bottomright'});leg.onAdd=function(){var d=L.DomUtil.create('div','map-legend');d.innerHTML='<b>Phases</b><br><i style="background:#e74c3c"></i> P1<br><i style="background:#e67e22"></i> P2<br><i style="background:#3498db"></i> P3<br><i style="background:#95a5a6"></i> P4';return d};leg.addTo(lMap);
+mapReady=true;
+lMap.on('layeradd',patchTileImages);lMap.on('moveend',patchTileImages);lMap.on('zoomend',patchTileImages);
+window.addEventListener('resize',function(){if(!lMap)return;lMap.invalidateSize();patchTileImages()});
+}catch(e){$('mapWarn').textContent='⚠️ '+e.message}}
 
 function addTileLayer(idx,opts){
-  opts=opts||{};
-  if(idx<0||idx>=TILE_PROVIDERS.length)idx=0;
-  currentTileIdx=idx;
-  var p=TILE_PROVIDERS[idx];
-  if(tileLoadTimer){clearTimeout(tileLoadTimer);tileLoadTimer=null}
-  if(tileLayer&&lMap){try{lMap.removeLayer(tileLayer)}catch(e){}}
-  var layerOpts={attribution:p.attr,maxZoom:p.maxZoom||19,updateWhenIdle:true,keepBuffer:2};
-  if(p.sub)layerOpts.subdomains=p.sub;
-  tileLayer=L.tileLayer(p.url,layerOpts);
-  var errCount=0,loadedAnyTile=false,fallbackTriggered=false;
-  setTileStatus('tile-loading','⏳ Chargement…');
-  $('mapWarn').textContent='';
-  function fallbackOnce(reason){
-    if(fallbackTriggered)return;fallbackTriggered=true;
-    setTileStatus('tile-err','❌ '+p.name);
-    $('mapWarn').textContent='⚠️ Tuiles « '+p.name+' » inaccessibles ('+reason+'). Fallback automatique…';
-    tryTileFallback(reason);
-  }
-  tileLayer.on('tileload',function(){loadedAnyTile=true;patchTileImages()});
-  tileLayer.on('load',function(){loadedAnyTile=true;setTileStatus('tile-ok','✅ '+p.name);$('mapWarn').textContent='';patchTileImages()});
-  tileLayer.on('tileerror',function(){errCount++;if(errCount>=8&&!loadedAnyTile)fallbackOnce('erreurs de chargement')});
-  tileLayer.addTo(lMap);
-  tileLoadTimer=setTimeout(function(){if(!loadedAnyTile)fallbackOnce('timeout')},7000);
-  patchTileImages();setTimeout(patchTileImages,250);setTimeout(patchTileImages,900);
-}
+opts=opts||{};if(idx<0||idx>=TILE_PROVIDERS.length)idx=0;currentTileIdx=idx;var p=TILE_PROVIDERS[idx];
+if(tileLoadTimer){clearTimeout(tileLoadTimer);tileLoadTimer=null}
+if(tileLayer&&lMap){try{lMap.removeLayer(tileLayer)}catch(e){}}
+var layerOpts={attribution:p.attr,maxZoom:p.maxZoom||19,updateWhenIdle:true,keepBuffer:2};if(p.sub)layerOpts.subdomains=p.sub;
+tileLayer=L.tileLayer(p.url,layerOpts);
+var errCount=0,loadedAnyTile=false,fallbackTriggered=false;
+setTileStatus('tile-loading','⏳ Chargement…');$('mapWarn').textContent='';
+function fallbackOnce(reason){if(fallbackTriggered)return;fallbackTriggered=true;setTileStatus('tile-err','❌ '+p.name);$('mapWarn').textContent='⚠️ Tuiles « '+p.name+' » inaccessibles ('+reason+'). Fallback automatique…';tryTileFallback(reason)}
+tileLayer.on('tileload',function(){loadedAnyTile=true;patchTileImages()});
+tileLayer.on('load',function(){loadedAnyTile=true;setTileStatus('tile-ok','✅ '+p.name);$('mapWarn').textContent='';patchTileImages()});
+tileLayer.on('tileerror',function(){errCount++;if(errCount>=8&&!loadedAnyTile)fallbackOnce('erreurs de chargement')});
+tileLayer.addTo(lMap);
+tileLoadTimer=setTimeout(function(){if(!loadedAnyTile)fallbackOnce('timeout')},7000);
+patchTileImages();setTimeout(patchTileImages,250);setTimeout(patchTileImages,900)}
 
-function switchTile(idx){
-  if(!mapReady){initMap();return}
-  tileTried=new Set([idx]);addTileLayer(idx,{manual:true});
-  setTimeout(function(){lMap.invalidateSize();patchTileImages()},300);
-  toast('🗺️ '+TILE_PROVIDERS[idx].name,'nf');
-}
-function fixMap(){
-  if(!mapReady){initMap();return}if(!lMap)return;
-  lMap.invalidateSize();patchTileImages();
-  setTimeout(function(){lMap.invalidateSize();patchTileImages()},300);
-  setTimeout(function(){lMap.invalidateSize();patchTileImages();renM()},650);
-}
+function switchTile(idx){if(!mapReady){initMap();return}tileTried=new Set([idx]);addTileLayer(idx,{manual:true});setTimeout(function(){lMap.invalidateSize();patchTileImages()},300);toast('🗺️ '+TILE_PROVIDERS[idx].name,'nf')}
+function fixMap(){if(!mapReady){initMap();return}if(!lMap)return;lMap.invalidateSize();patchTileImages();setTimeout(function(){lMap.invalidateSize();patchTileImages()},300);setTimeout(function(){lMap.invalidateSize();patchTileImages();renM()},650)}
 
 function getFilteredForMap(){
-  const rp=getGlobalRP();const ph=$('fPh')?.value||'all';const fo=$('fFo')?.value||'all';const pa=$('fPa')?.value||'all';const rpj=$('fRpj')?.value||'all';const se=($('fSe')?.value||'').toLowerCase();
-  let f=scored(rp,pa);if(ph!=='all')f=f.filter(s=>s.sc.ph===+ph);
-  if(fo==='fos')f=f.filter(s=>isFos(s.ht));if(fo==='ren')f=f.filter(s=>{const t=(s.ht||'').toLowerCase();return t.includes('pac')||t.includes('bois')||t.includes('cad')});
-  if(rpj!=='all')f=f.filter(s=>(s.drt||'')===rpj);
-  if(se)f=f.filter(s=>(s.id+s.nom+(s.rp||'')+(s.drt||'')+(s.hsub||'')+(s.pat||'')+(s.adr||'')).toLowerCase().includes(se));return f}
+const rp=getGlobalRP();const ph=$('fPh')?.value||'all';const fo=$('fFo')?.value||'all';const pa=$('fPa')?.value||'all';const rpj=$('fRpj')?.value||'all';const se=($('fSe')?.value||'').toLowerCase();
+let f=scored(rp,pa);if(ph!=='all')f=f.filter(s=>s.sc.ph===+ph);
+if(fo==='fos')f=f.filter(s=>isFos(s.ht));if(fo==='ren')f=f.filter(s=>{const t=(s.ht||'').toLowerCase();return t.includes('pac')||t.includes('bois')||t.includes('cad')});
+if(rpj!=='all')f=f.filter(s=>(s.drt||'')===rpj);
+if(se)f=f.filter(s=>(s.id+s.nom+(s.rp||'')+(s.drt||'')+(s.hsub||'')+(s.pat||'')+(s.adr||'')).toLowerCase().includes(se));return f}
+
+function mkTip(s){return'<div style="min-width:180px;font-size:.76rem;line-height:1.5"><b style="color:#1e3a5f">'+s.id+'</b> — '+s.nom+'<br>📍 '+(s.adr||'—')+'<br>📐 SRE: <b>'+(s.sre?s.sre.toLocaleString('fr-CH')+' m²':'—')+'</b><br>🔥 IDC: <b>'+(s.idcC||'—')+'</b><br>📊 Score: <b>'+s.sc.t+'</b> · P<b>'+s.sc.ph+'</b> · T<b>'+s.sc.ti+'</b><br>📄 CECB+ '+getCecbIcon(s.cecbRaw)+'</div>'}
 
 function renM(){
-  if(!mapReady||!lMap||!lMarkers)return;lMarkers.clearLayers();
-  const f=getFilteredForMap();const bounds=[];
-  const fileG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='file');const nomiG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='nominatim');const npaG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='npa');const none=f.filter(s=>!s.lat||!s.lng||s.geoQ==='none');
-  $('mapCount').innerHTML='📍 <b>'+fileG.length+'</b> fichier · <b>'+nomiG.length+'</b> Nominatim · <b>'+npaG.length+'</b> ≈NPA'+(none.length?' · <span style="color:#e67e22">'+none.length+' sans</span>':'');
-  if(fileG.length>0)$('geoTip').style.display='none';
-  const addM=(arr,border,op)=>{arr.forEach(s=>{const c=phColors[s.sc.ph]||'#95a5a6';const m=L.circleMarker([s.lat,s.lng],{radius:7,fillColor:c,color:border,weight:2,opacity:1,fillOpacity:op}).addTo(lMarkers);m.bindTooltip(mkTip(s),{direction:'top',className:'map-tooltip-custom'});bounds.push([s.lat,s.lng])})};
-  addM(fileG,'#27ae60',.9);addM(nomiG,'#fff',.85);addM(npaG,'#888',.35);
-  if(bounds.length>1)lMap.fitBounds(bounds,{padding:[30,30],maxZoom:15});else if(bounds.length===1)lMap.setView(bounds[0],14);
-  setTimeout(patchTileImages,200);setTimeout(patchTileImages,800);
-}
+if(!mapReady||!lMap||!lMarkers)return;lMarkers.clearLayers();
+const f=getFilteredForMap();const bounds=[];
+const fileG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='file');const nomiG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='nominatim');const npaG=f.filter(s=>s.lat&&s.lng&&s.geoQ==='npa');const none=f.filter(s=>!s.lat||!s.lng||s.geoQ==='none');
+$('mapCount').innerHTML='📍 <b>'+fileG.length+'</b> fichier · <b>'+nomiG.length+'</b> Nominatim · <b>'+npaG.length+'</b> ≈NPA'+(none.length?' · <span style="color:#e67e22">'+none.length+' sans</span>':'');
+if(fileG.length>0)$('geoTip').style.display='none';
+const addM=(arr,border,op)=>{arr.forEach(s=>{const c=phColors[s.sc.ph]||'#95a5a6';const m=L.circleMarker([s.lat,s.lng],{radius:7,fillColor:c,color:border,weight:2,opacity:1,fillOpacity:op}).addTo(lMarkers);m.bindTooltip(mkTip(s),{direction:'top',className:'map-tooltip-custom'});bounds.push([s.lat,s.lng])})};
+addM(fileG,'#27ae60',.9);addM(nomiG,'#fff',.85);addM(npaG,'#888',.35);
+if(bounds.length>1)lMap.fitBounds(bounds,{padding:[30,30],maxZoom:15});else if(bounds.length===1)lMap.setView(bounds[0],14);
+setTimeout(patchTileImages,200);setTimeout(patchTileImages,800)}
 
-function mkTip(s){return'<div style="min-width:180px;font-size:.76rem;line-height:1.5"><b style="color:#1e3a5f">'+s.id+'</b> — '+s.nom+'<br>📍 '+(s.adr||'—')+'<br>📐 SRE: <b>'+(s.sre?s.sre.toLocaleString('fr-CH')+' m²':'—')+'</b><br>🔥 IDC: <b>'+(s.idcC||'—')+'</b><br>📊 Score: <b>'+s.sc.t+'</b> · P<b>'+s.sc.ph+'</b> · T<b>'+s.sc.ti+'</b></div>'}
-
-let geoRunning=false;
-async function geocodeSites(){
-  if(geoRunning)return;const toGeo=S.filter(s=>s.adr&&s.adr.length>3&&s.geoQ!=='file'&&s.geoQ!=='nominatim');
-  if(!toGeo.length){$('mapGeoStatus').textContent='✅ Tous géolocalisés';return}
-  let ok=false;try{const t=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+(geoCtx.cc==='ae'?'Dubai':'Geneve')+'&limit=1');ok=t.ok}catch(e){}
-  if(!ok){$('mapWarn').textContent='⚠️ Nominatim inaccessible.';return}
-  geoRunning=true;let done=0,failed=0,batch=0;
-  for(const s of toGeo){const clean=cleanAddress(s.adr);if(!clean||clean.length<4){failed++;continue}
-  if(geoCache[clean]){s.lat=geoCache[clean].lat;s.lng=geoCache[clean].lng;s.geoQ='nominatim';s.geoFallback=false;done++;batch++;if(batch%10===0)renM();continue}
-  try{
-    const aL=clean.toLowerCase();
-    const ns=!aL.includes('genève')&&!aL.includes('dubai');
-    const q=encodeURIComponent(clean+(ns?geoCtx.suffix:''));
-    const r=await fetch(
-      'https://nominatim.openstreetmap.org/search?format=json&countrycodes='+encodeURIComponent(geoCtx.cc)+'&q='+q+'&limit=1',
-      {headers:{'Accept':'application/json'}}
-    );
-    const d=await r.json();
-    if(d&&d.length>0){s.lat=+d[0].lat;s.lng=+d[0].lon;s.geoQ='nominatim';s.geoFallback=false;geoCache[clean]={lat:s.lat,lng:s.lng};done++;batch++}else failed++;
-  }catch(e){failed++}
-  $('mapGeoStatus').textContent='🌐 '+done+'/'+toGeo.length;if(batch>=10){batch=0;renM()}await new Promise(r=>setTimeout(r,1100))}
-  $('mapGeoStatus').textContent='✅ '+done+(failed?' · ⚠'+failed:'');geoRunning=false;renM()}
+/* --- Geocoding Nominatim --- */
+function detectGeoContext(){const w=S.filter(s=>s.lat&&s.lng&&!s.geoFallback);if(w.length>5){const aLat=w.reduce((a,s)=>a+s.lat,0)/w.length,aLng=w.reduce((a,s)=>a+s.lng,0)/w.length;if(aLat>20&&aLat<28&&aLng>50&&aLng<60){geoCtx={lat:aLat,lng:aLng,suffix:', Dubai, UAE',cc:'ae'};return}geoCtx={lat:aLat,lng:aLng,suffix:', Genève, Suisse',cc:'ch'};return}let du=0;S.forEach(s=>{if(s.adr&&/duba[ïi]|jumeirah|deira|sheikh|palm|marina|business\s?bay/i.test(s.adr))du++});if(du>S.length*0.15)geoCtx={lat:25.2048,lng:55.2708,suffix:', Dubai, UAE',cc:'ae'};else geoCtx={lat:46.2044,lng:6.1432,suffix:', Genève, Suisse',cc:'ch'}}
 
 function assignFallbackCoords(){S.forEach(s=>{if(s.lat&&s.lng&&!s.geoFallback){if(s.geoQ!=='nominatim')s.geoQ='file';return}const npa=extractNPA(s.adr);if(npa&&GE_NPA[npa]){const[lat,lng]=GE_NPA[npa];s.lat=lat+(Math.random()-.5)*.004;s.lng=lng+(Math.random()-.5)*.004;s.geoQ='npa';s.geoFallback=true}else{s.lat=null;s.lng=null;s.geoQ='none';s.geoFallback=true}})}
 
-function exportGeoCSV(){
-  const sc=scored();let c='N°;Nom;Adresse;RP;Responsable projet;Patrimoine;Score;Type_intervention;Phase;Coeff;SRE;IDC;IDC projeté;Chauffage;Substitution;CECB;Invest ImmOBA;Complétude;Faisabilité;Notes;Latitude;Longitude;Geo_Source\n';
-  sc.forEach(s=>{const lat=(s.lat&&s.geoQ!=='npa')?s.lat.toFixed(6):'';const lng=(s.lng&&s.geoQ!=='npa')?s.lng.toFixed(6):'';const src=s.geoQ==='file'?'fichier':s.geoQ==='nominatim'?'nominatim':'';const note=(siteNotes[s.id]||'').replace(/;/g,',').replace(/\n/g,' ');
-  c+=s.id+';'+s.nom+';'+(s.adr||'')+';'+(s.rp||'')+';'+(s.drt||'')+';'+(s.pat||'')+';'+s.sc.t+';'+s.sc.ti+';'+s.sc.ph+';'+(s.coeff||'')+';'+(s.sre||'')+';'+(s.idcC||'')+';'+(s.idcVB||'')+';'+(s.ht||'')+';'+(s.hsub||'')+';'+(s.cecb?'Oui':'Non')+';'+(s.invVB||'')+';'+compl(s)+'%;'+feasib(s)+';'+note+';'+lat+';'+lng+';'+src+'\n'});
-  const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='priorisation_PTE_geocode.csv';a.click();toast('📥 Export terminé','ok')}
+let geoRunning=false;
+async function geocodeSites(){
+if(geoRunning)return;const toGeo=S.filter(s=>s.adr&&s.adr.length>3&&s.geoQ!=='file'&&s.geoQ!=='nominatim');
+if(!toGeo.length){$('mapGeoStatus').textContent='✅ Tous géolocalisés';return}
+let ok=false;try{const t=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+(geoCtx.cc==='ae'?'Dubai':'Geneve')+'&limit=1');ok=t.ok}catch(e){}
+if(!ok){$('mapWarn').textContent='⚠️ Nominatim inaccessible.';return}
+geoRunning=true;let done=0,failed=0,batch=0;
+for(const s of toGeo){const clean=cleanAddress(s.adr);if(!clean||clean.length<4){failed++;continue}
+if(geoCache[clean]){s.lat=geoCache[clean].lat;s.lng=geoCache[clean].lng;s.geoQ='nominatim';s.geoFallback=false;done++;batch++;if(batch%10===0)renM();continue}
+try{
+const aL=clean.toLowerCase();const ns=!aL.includes('genève')&&!aL.includes('dubai');
+const q=encodeURIComponent(clean+(ns?geoCtx.suffix:''));
+const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes='+encodeURIComponent(geoCtx.cc)+'&q='+q+'&limit=1',{headers:{'Accept':'application/json'}});
+const d=await r.json();
+if(d&&d.length>0){s.lat=+d[0].lat;s.lng=+d[0].lon;s.geoQ='nominatim';s.geoFallback=false;geoCache[clean]={lat:s.lat,lng:s.lng};done++;batch++}else failed++;
+}catch(e){failed++}
+$('mapGeoStatus').textContent='🌐 '+done+'/'+toGeo.length;if(batch>=10){batch=0;renM()}await new Promise(r=>setTimeout(r,1100))}
+$('mapGeoStatus').textContent='✅ '+done+(failed?' · ⚠'+failed:'');geoRunning=false;renM()}
+
 
 /* ================================================================
-   ★ FIX 1 : fc() — exact match for short terms (≤ 2 chars)
-   Prevents 'RP' from matching inside 'facteu‹rp›rotection'
+   MODULE 9 : ROUTER & INIT — Navigation, pondérations, sample
    ================================================================ */
-function fc(h,ns){
-  for(const n of ns){
-    const nt=n.toLowerCase().replace(/[\s\n\r\u00a0\-_'"()\[\]\/\.]/g,'');
-    const idx=h.findIndex(x=>{
-      const xt=x.toLowerCase().replace(/[\s\n\r\u00a0\-_'"()\[\]\/\.]/g,'');
-      if(nt.length<=2) return xt===nt;   // ← exact match for RP, N°, etc.
-      return xt.includes(nt);
-    });
-    if(idx>=0) return idx;
-  }
-  return -1;
-}
+function sw(id,b){document.querySelectorAll('.pnl').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));$(id).classList.add('on');b.classList.add('on');ren();if(id==='mapPnl')setTimeout(()=>{initMap();fixMap()},200)}
+function tglW(){wOp=!wOp;$('wB').classList.toggle('op',wOp);$('wCh').classList.toggle('op',wOp)}
+function tglS(bid,cid){const b=$(bid),c=$(cid);b.classList.toggle('op');c.classList.toggle('op');if(b.classList.contains('op'))setTimeout(()=>{b.querySelectorAll('[id^=g]').forEach(el=>{try{Plotly.Plots.resize(el)}catch(e){}})},400)}
+function tglM(n){$('mB'+n).classList.toggle('op');$('mCh'+n).classList.toggle('op')}
 
-function gv(row,idx){if(idx<0||!row||idx>=row.length)return'';const v=row[idx];return(v===null||v===undefined||v==='')?'':String(v)}
-function gvr(row,idx){if(idx<0||!row||idx>=row.length)return null;const v=row[idx];return(v===null||v===undefined||v==='')?null:v}
-function parseCSVtoRows(t){const fl=t.split('\n')[0]||'';const sep=(fl.split(';').length>=fl.split(',').length)?';':',';const rows=[];let row=[];let cur='';let inQ=false;for(let i=0;i<t.length;i++){const ch=t[i];if(ch==='"'){if(inQ&&t[i+1]==='"'){cur+='"';i++}else inQ=!inQ}else if(ch===sep&&!inQ){row.push(cur.trim());cur=''}else if(ch==='\n'&&!inQ){row.push(cur.trim());if(row.length>3)rows.push(row);row=[];cur=''}else if(ch==='\r'){}else cur+=ch}if(row.length>3){row.push(cur.trim());rows.push(row)}return rows}
-function xlsxToRows(buf){const d=new Uint8Array(buf);const wb=XLSX.read(d,{type:'array'});let bs=wb.SheetNames[0],bc=0;for(const n of wb.SheetNames){const s=wb.Sheets[n];if(!s['!ref'])continue;const r=XLSX.utils.decode_range(s['!ref']);const c=r.e.c-r.s.c+1;if(c>bc){bc=c;bs=n}}return XLSX.utils.sheet_to_json(wb.Sheets[bs],{header:1,defval:'',raw:true,blankrows:false})}
+function uW(src){
+if(src==='d'){W.c=+$('w1').value;W.o=+$('w2').value;W.i=+$('w3').value;W.e=+$('w4').value;W.a=+$('w5').value;W.v=+$('w6').value}
+else if(src==='r'){W.c=+$('rw1').value;W.o=+$('rw2').value;W.i=+$('rw3').value;W.e=+$('rw4').value;W.a=+$('rw5').value;W.v=+$('rw6').value}
+syncAllW();ren()}
+function syncAllW(){var vals=[W.c,W.o,W.i,W.e,W.a,W.v];['1','2','3','4','5','6'].forEach(function(i,idx){$('w'+i).value=vals[idx];$('v'+i).textContent=vals[idx];$('rw'+i).value=vals[idx];$('rv'+i).textContent=vals[idx]});var s='Σ '+(W.c+W.o+W.i+W.e+W.a+W.v)+' → normalisé 100%';$('tW').textContent=s;$('rtW').textContent=s}
+function defW(){W={c:30,o:25,i:20,e:12,a:8,v:5};syncAllW();ren()}
 
-/* ================================================================
-   ★ FIX 2 : importFromRows — singular + plural variants for rp
-   ================================================================ */
-function importFromRows(rows){
-  if(rows.length<2)return[];const h=rows[0].map(v=>String(v||'').trim());
-  const c={
-    id:   fc(h,['N° sous site','nsoussite','N°soussite','N°']),
-    nom:  fc(h,['Nom du site_AB','Nomdusite','Nom du site']),
-    adr:  fc(h,['Adresse','Adresse du site','Lieu']),
-    rang: fc(h,['Rang actuel','Rang']),
-    coeff:fc(h,['Coeff Stratus','CoeffStratus']),
-    sre:  fc(h,['SRE corrigée','SREcorrigée','SRE']),
-    idcC: fc(h,['IDC corrigé','IDCcorrigé','IDC corrige']),
-    agent:fc(h,['Agent']),
-    pat:  fc(h,['Classement au Patrimoine','Patrimoine']),
-    elec: fc(h,['Conso Elec','ConsoElec']),
-    eau:  fc(h,['Conso Eau','ConsoEau']),
-    consoTherm:fc(h,['Conso Therm','ConsoTherm']),
-    co2:  fc(h,['Co2 2025','Co2 2024','kgCo2','Co2']),
-    clIDC:fc(h,['Classe IDC','ClasseIDC']),
-    clVet:fc(h,['Classe Vétusté','ClasseVetuste']),
-    fp:   fc(h,['Facteur protection','Facteurprotection']),
-    ti:   fc(h,["Type d'intervention","TypeIntervention","Type_intervention","Typeintervention","Type intervention"]),
-    /* ★ FIX : added singular "Responsable Portefeuille" + abbreviated forms */
-    rp:   fc(h,['Responsables Portefeuille','Responsable Portefeuille','ResponsablesPortefeuille','ResponsablePortefeuille','Resp Portefeuille','RP']),
-    drt:  fc(h,['Responsable DRT/DCO','Responsable DRT DCO','ResponsableDRTDCO']),
-    cecb: fc(h,['Audit CECB','AuditCECB']),
-    ht:   fc(h,['Chauffage Type Energie','ChauffageTypeEnergie','Chauffage Type']),
-    hsub: fc(h,['Chauffage de subsitution','Chauffage de substitution','substitution']),
-    idcVB:fc(h,['IDC projeté','IDCprojeté']),
-    invVB:fc(h,['Invest ImmOBA','InvestImmOBA','Invest VB','Invest']),
-    lat:  fc(h,['Latitude','Lat','GPS_Lat','YCOOR']),
-    lng:  fc(h,['Longitude','Long','Lng','GPS_Lng','XCOOR','lon']),
-    notes:fc(h,['Notes','Commentaires','Remarques'])
-  };
+function ren(){renD();renR();renP();renM()}
 
-  /* ★ DEBUG — log detected column indices to console */
-  console.log('[PTE] Column mapping:', JSON.stringify(c));
-  console.log('[PTE] Headers:', h.join(' | '));
-
-  const hasGPS=c.lat>=0&&c.lng>=0;const adrCol=c.adr>=0?c.adr:2;let fgc=0;const sites=[];
-  for(let r=1;r<rows.length;r++){const R=rows[r];if(!R||R.length<5)continue;
-    const rpV=gv(R,c.rp);
-    if(!rpV||rpV.toLowerCase().includes('hors p\u00e9rim\u00e8tre')||rpV.toLowerCase().includes('hors perimetre'))continue;
-    const id=gv(R,c.id);if(!id||id.length<2)continue;
-    const coeff=pc(gvr(R,c.coeff));const cecbStr=gv(R,c.cecb);const hasCECB=cecbStr&&(/var_|en cours|demandé|prio\s*\d/i.test(cecbStr));const htVal=gv(R,c.ht)||gv(R,c.agent)||'';
-    let fLat=null,fLng=null,fQ='none';if(hasGPS){const rLat=pn(gvr(R,c.lat)),rLng=pn(gvr(R,c.lng));if(rLat&&rLng&&Math.abs(rLat)>1&&Math.abs(rLng)>0.01){fLat=rLat;fLng=rLng;fQ='file';fgc++}}
-    if(c.notes>=0){const n=gv(R,c.notes);if(n)siteNotes[id]=n}
-    sites.push({id,nom:(gv(R,c.nom)||'').replace(/\s*-\s*\(.*/,'').substring(0,55),adr:gv(R,adrCol),rp:rpV.trim(),drt:(gv(R,c.drt)||'').trim(),rang:pn(gvr(R,c.rang)),coeff,sre:pn(gvr(R,c.sre)),idcC:pn(gvr(R,c.idcC)),pat:gv(R,c.pat)||'',fp:pn(gvr(R,c.fp)),ti:pn(gvr(R,c.ti)),clIDC:pn(gvr(R,c.clIDC)),clVet:pn(gvr(R,c.clVet)),elec:pn(gvr(R,c.elec)),eau:pn(gvr(R,c.eau)),consoTherm:pn(gvr(R,c.consoTherm)),co2:pn(gvr(R,c.co2)),ht:htVal,hsub:gv(R,c.hsub),cecb:hasCECB,idcVB:pn(gvr(R,c.idcVB)),invVB:pn(gvr(R,c.invVB)),lat:fLat,lng:fLng,geoQ:fQ,geoFallback:fQ==='none'})
-  }
-  return sites}
-
-function handleFileImport(e){const f=e.target.files[0];if(!f)return;lastFileHandle=f;lastFileName=f.name;processFile(f)}
-function processFile(f){const ext=f.name.split('.').pop().toLowerCase();const reader=new FileReader();if(ext==='xlsx'||ext==='xls'){reader.onload=function(ev){try{finishImport(xlsxToRows(ev.target.result),f.name)}catch(er){toast('⚠️ '+er.message,'wr')}};reader.readAsArrayBuffer(f)}else{reader.onload=function(ev){try{finishImport(parseCSVtoRows(ev.target.result),f.name)}catch(er){toast('⚠️ '+er.message,'wr')}};reader.readAsText(f,'UTF-8')}}
-function finishImport(rows,source){const si=importFromRows(rows);if(!si?.length){toast('⚠️ Aucun site importé (vérifiez la colonne RP)','wr');return}S=si;phaseOverrides={};detectGeoContext();assignFallbackCoords();if(mapReady&&lMap)lMap.setView([geoCtx.lat,geoCtx.lng],12);popRP();popRPProject();syncAllW();ren();const fg=S.filter(s=>s.geoQ==='file').length;updateSourceInfo(si.length,source,'file');$('btnRefresh').style.display='inline-block';toast('✅ '+si.length+' sites · 📍 '+fg+' GPS','ok');if(fg<S.length)geocodeSites()}
-function refreshData(){if(lastFileHandle){processFile(lastFileHandle);toast('🔄','nf')}else toast('⚠️ Aucun fichier','wr')}
-function updateSourceInfo(count,source,type){const badge=$('srcBadge');if(type==='file'){badge.className='src-indicator src-file';badge.textContent='📄 '+count+' sites — '+(lastFileName||source)}else{badge.className='src-indicator src-none';badge.textContent='⚠ Données échantillon'}}
-
+/* --- Données échantillon --- */
 function loadSample(){S=[
-{id:"847291",nom:"Château Courant d'Air",adr:"Sheikh Mohammed bin Rashid Blvd 4, Downtown Dubai",lat:25.1972,lng:55.2744,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:35,coeff:.50,sre:4411,idcC:144,ht:"Mazout",hsub:"PAC+Gaz",fp:.5,pat:"Objets d'intérêt",elec:137101,co2:212125,clIDC:3,clVet:4,cecb:false,invVB:7490390},
-{id:"163854",nom:"Villa Passoire Thermique",adr:"Al Wasl Road 22, Jumeirah 1",lat:25.2105,lng:55.2500,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:90,coeff:.53,sre:2231,idcC:83,ht:"Gaz",hsub:"CAD SIG Champel",fp:1,pat:"Non protégé",elec:73818,co2:44546,clIDC:2,clVet:4,cecb:false,invVB:3947500},
-{id:"529417",nom:"Palais du Thermostat Cassé",adr:"Crescent Road 10, Palm Jumeirah",lat:25.1124,lng:55.1390,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:197,coeff:.76,sre:6419,idcC:69,ht:"Gaz",hsub:"PAC+Gaz",fp:.5,pat:"Classé",elec:176358,co2:159151,clIDC:1,clVet:2,cecb:false,invVB:13306000},
-{id:"381926",nom:"Bunker du Radiateur Triste",adr:"Sheikh Zayed Road 66, Trade Centre",lat:25.2240,lng:55.2830,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:146,coeff:.66,sre:2817,idcC:77,ht:"Gaz",hsub:"PAC+Gaz",fp:.5,pat:"Classé",co2:138833,clIDC:1,clVet:3,cecb:false,invVB:4590000},
-{id:"674235",nom:"Manoir du Pull Obligatoire",adr:"King Salman bin Abdulaziz Al Saud St 1, Dubai Marina",lat:25.0800,lng:55.1400,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:60,coeff:.44,sre:4719,idcC:103,ht:"Gaz",hsub:"Bois",fp:.5,pat:"Classé",elec:99554,co2:110056,clIDC:2,clVet:4,cecb:true,invVB:15500000,idcVB:49.7},
-{id:"912648",nom:"Chalet du Mazout Joyeux",adr:"Al Khail Road 15, Al Quoz",lat:25.1550,lng:55.2350,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:163,coeff:.60,sre:952,idcC:268,ht:"Gaz",hsub:"Chaudière bois",fp:.5,pat:"Classé",co2:201,clIDC:4,clVet:4,cecb:true,invVB:2843499,idcVB:43.1},
-{id:"258371",nom:"Tour de la Facture Salée",adr:"Jumeirah Beach Road 7, Umm Suqeim",lat:25.1530,lng:55.2000,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:56,coeff:.59,sre:5754,idcC:135,ht:"Mazout",hsub:"PAC+Gaz",fp:1,pat:"",elec:168753,co2:172964,clIDC:3,clVet:4,cecb:false,invVB:4375157},
-{id:"743192",nom:"Citadelle du CAD Capricieux",adr:"Dubai Creek Road 45, Deira",lat:25.2710,lng:55.3100,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:140,coeff:.76,sre:19547,idcC:55,ht:"CAD tarifé",fp:.5,pat:"Objets d'intérêt",elec:609647,co2:972303,clIDC:1,clVet:2,cecb:false,invVB:23150000},
-{id:"496813",nom:"Forteresse des Finances Gelées",adr:"Airport Road 66, Al Garhoud",lat:25.2450,lng:55.3400,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:125,coeff:.76,sre:20841,idcC:57,ht:"CAD réparti",fp:1,pat:"Non protégé",elec:858559,co2:423523,clIDC:1,clVet:2,cecb:true,invVB:17610000,idcVB:31.9},
-{id:"691374",nom:"Cabane du Gaz Éternel",adr:"Al Fahidi Street 12, Bur Dubai",lat:25.2630,lng:55.2950,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:138,coeff:.49,sre:696,idcC:201,ht:"Gaz",hsub:"Bois",fp:.5,pat:"Classé",elec:16602,co2:117409,clIDC:4,clVet:4,cecb:true,invVB:2975999,idcVB:55.6},
-{id:"438527",nom:"Mégaplex de la Surchauffe",adr:"Happiness Street 22, Al Quoz Industrial",lat:25.1600,lng:55.2200,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:2,coeff:.45,sre:36600,idcC:123,ht:"Gaz",hsub:"Réseau CAD et géothermie",fp:1,pat:"Non protégé",elec:3978645,co2:1402104,clIDC:2,clVet:4,cecb:false,invVB:10439803},
-{id:"264918",nom:"Commissariat du Gaspillage",adr:"Al Rigga Road 6, Deira",lat:25.2650,lng:55.3200,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:40,coeff:.44,sre:5192,idcC:143,ht:"Gaz",hsub:"CAD_Jonction",fp:1,pat:"Non protégé",elec:267694,co2:191819,clIDC:3,clVet:4,cecb:true,invVB:7884300},
-{id:"813467",nom:"Poste du Mazout Récalcitrant",adr:"Dubai-Al Ain Road 130, Silicon Oasis",lat:25.1200,lng:55.3800,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:301,coeff:.74,sre:374,idcC:202,ht:"Mazout",hsub:"PAC ou Bois",fp:1,pat:"Non protégé",elec:33281,co2:36927,clIDC:4,clVet:2,cecb:true,invVB:1520500},
-{id:"346189",nom:"QG des Courants d'Air",adr:"Umm Hurair Road 24, Oud Metha",lat:25.2350,lng:55.3100,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:161,coeff:.69,sre:12455,idcC:86,ht:"Gaz",hsub:"CAD GENILAC",fp:1,pat:"Non protégé",elec:3515251,co2:1348702,clIDC:2,clVet:3,cecb:false,invVB:7411000},
-{id:"469352",nom:"Académie du Givre Intérieur",adr:"Gold Souk Lane 3, Deira",lat:25.2870,lng:55.2980,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:295,coeff:.35,sre:1824,idcC:190,ht:"CAD réparti",fp:.5,pat:"Inventaire",elec:52513,co2:32890,clIDC:4,clVet:4,cecb:true,invVB:0,idcVB:66.4},
-{id:"854271",nom:"École du Bonnet en Classe",adr:"Al Thanya Street 75, Business Bay",lat:25.1850,lng:55.2650,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:14,coeff:.49,sre:11036,idcC:108,ht:"Gaz",fp:1,pat:"Non protégé",elec:343128,co2:2817,clIDC:2,clVet:4,cecb:true,invVB:14965500},
-{id:"637189",nom:"Institut du Chauffage Perplexe",adr:"Marasi Drive 50, Business Bay",lat:25.1820,lng:55.2700,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:79,coeff:.46,sre:4124,idcC:117,ht:"Gaz",hsub:"Gaz condensation",fp:1,pat:"Non protégé",elec:62539,co2:128958,clIDC:2,clVet:4,cecb:true,invVB:5235000},
-{id:"918374",nom:"Gymnase du Frisson Sportif",adr:"Al Khawaneej Road 30, Al Khawaneej",lat:25.2520,lng:55.4200,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:101,coeff:.50,sre:2054,idcC:100,ht:"Mazout",fp:1,pat:"Non protégé",elec:41591,co2:47724,clIDC:2,clVet:4,cecb:true,invVB:3289500,idcVB:36.1},
-{id:"543628",nom:"CO du Parapluie Percé",adr:"Ras Al Khor Road 44, Festival City",lat:25.2200,lng:55.3600,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:63,coeff:.50,sre:11343,idcC:107,ht:"Gaz",hsub:"PAC EAU-EAU sur nappe",fp:.5,pat:"Objets d'intérêt",elec:150379,co2:196253,clIDC:2,clVet:4,cecb:true,invVB:11704075,idcVB:36.1},
-{id:"761352",nom:"École Budget Chauffage XXL",adr:"Discovery Gardens Main St 15, Jebel Ali",lat:25.0500,lng:55.1350,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:55,coeff:.38,sre:1485,idcC:117,ht:"Mazout",hsub:"CAD_Lignon",fp:.5,pat:"Classé",elec:15379,co2:38645,clIDC:2,clVet:4,cecb:false,invVB:3970999},
-{id:"348291",nom:"Collège Haute Tension",adr:"Dubai Hills Blvd 109, Dubai Hills Estate",lat:25.1300,lng:55.2400,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:26,coeff:.45,sre:10675,idcC:94,ht:"Gaz",hsub:"CAD_Lignon",fp:.5,pat:"Zone protégée",elec:207659,co2:9252,clIDC:2,clVet:4,cecb:false,invVB:15808250},
-{id:"952174",nom:"Centre Thermostat Fantôme B",adr:"Bluewaters Island Way 15, Bluewaters",lat:25.0810,lng:55.1280,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:4,coeff:.49,sre:8570,idcC:99,ht:"CAD réparti",fp:.5,pat:"Objets d'intérêt",elec:364429,co2:127092,clIDC:2,clVet:4,cecb:true,invVB:15955000,idcVB:42.4},
-{id:"283641",nom:"Centre Thermostat Fantôme XL",adr:"Expo Road 77, Expo City Dubai",lat:25.0575,lng:55.0620,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:1,coeff:.43,sre:13000,idcC:102,ht:"CAD réparti",fp:.5,pat:"Objets d'intérêt",elec:702117,co2:244858,clIDC:2,clVet:4,cecb:true,invVB:26165000,idcVB:51.1},
-{id:"794528",nom:"CO du Fond de Mazout",adr:"Warsan Road 35, International City",lat:25.1680,lng:55.4100,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:103,coeff:.62,sre:13632,idcC:116,ht:"Mazout",hsub:"PAC ou bois",fp:1,pat:"Non protégé",elec:174508,co2:255112,clIDC:2,clVet:3,cecb:true,invVB:12563000,idcVB:30},
-{id:"156372",nom:"CEC Chaudement Protégé",adr:"City Walk Promenade 29, Al Wasl",lat:25.2070,lng:55.2600,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:116,coeff:.70,sre:13499,idcC:110,ht:"Mazout",hsub:"CAD SIG Champel",fp:.5,pat:"Objets d'intérêt",elec:220594,co2:445918,clIDC:2,clVet:3,cecb:true,invVB:17679000,idcVB:36.4},
-{id:"873416",nom:"CFP du Radiateur Incompris",adr:"Dubai Science Park Ave 16, Al Barsha South",lat:25.1100,lng:55.1850,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:52,coeff:.61,sre:14218,idcC:125,ht:"CAD réparti",fp:1,pat:"Non protégé",elec:700556,co2:212120,clIDC:3,clVet:3,cecb:false,invVB:9945000},
-{id:"715863",nom:"Tannerie du Baron Frileux",adr:"Kite Beach Road 26, Jumeirah 3",lat:25.1700,lng:55.2100,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:278,coeff:.50,sre:534,idcC:100,ht:"Gaz",fp:.5,pat:"Objets d'intérêt",clIDC:2,clVet:4,cecb:true,invVB:660996,idcVB:50},
-{id:"248931",nom:"Villa Mousquetaires du Froid",adr:"The Walk Promenade 42, JBR",lat:25.0770,lng:55.1350,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:29,coeff:.34,sre:516,idcC:156,ht:"Gaz",hsub:"PAC + Gaz",fp:.5,pat:"Ensembles 19e-20e",elec:8623,co2:30706,clIDC:3,clVet:4,cecb:true,invVB:2908800,idcVB:60},
-{id:"687215",nom:"ECG Exploratrice du Froid",adr:"2nd December Street 16, Al Satwa",lat:25.2300,lng:55.2620,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:38,coeff:.42,sre:5460,idcC:92,ht:"Mazout",hsub:"CAD GENILAC",fp:.5,pat:"Zone protégée",elec:121027,co2:133249,clIDC:2,clVet:4,cecb:true,invVB:11275500,idcVB:71.4},
-{id:"421368",nom:"CO du Renard Rusé mais Glacé",adr:"Sheikh Rashid Road 1, Nad Al Sheba",lat:25.1650,lng:55.3200,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:8,coeff:.30,sre:14688,idcC:110,ht:"Mazout",hsub:"PAC+Gaz",fp:1,pat:"Non protégé",elec:167039,co2:435670,clIDC:2,clVet:4,cecb:false,invVB:1630000},
-{id:"153287",nom:"CO des Quatre Vents Glacés",adr:"Nad Al Hamar Road 150, Nad Al Hamar",lat:25.2050,lng:55.3800,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:67,coeff:.64,sre:11346,idcC:98,ht:"Mazout",hsub:"CAD_Lignon",fp:1,pat:"Non protégé",elec:201768,co2:345962,clIDC:2,clVet:3,cecb:true,invVB:10532000,idcVB:37.2},
-{id:"362519",nom:"CO Nid de Courants d'Air",adr:"Al Yalayis Road 232, Dubai Investment Park",lat:25.0250,lng:55.1550,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:32,coeff:.57,sre:9596,idcC:86,ht:"Mazout",hsub:"Bois",fp:1,pat:"Non protégé",elec:193962,co2:212098,clIDC:2,clVet:4,cecb:true,invVB:10671000,idcVB:47.2},
-{id:"814673",nom:"Atelier du Glaçon Créatif",adr:"Al Mustaqbal Street 30, World Trade Centre",lat:25.2270,lng:55.2850,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:87,coeff:.33,sre:8910,idcC:97,ht:"Mazout",hsub:"PAC+Gaz",fp:1,pat:"",elec:24403,co2:282583,clIDC:2,clVet:4,cecb:true,invVB:3805000,idcVB:21.4},
-{id:"563182",nom:"HEdS Champagne Glacée",adr:"Ghaf Tree Street 47, The Sustainable City",lat:25.0900,lng:55.3100,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:248,coeff:.78,sre:8153,idcC:95,ht:"Gaz",hsub:"CAD Champel",fp:1,pat:"Non protégé",elec:318239,co2:398647,clIDC:2,clVet:2,cecb:true,invVB:10128000,idcVB:30.6},
-{id:"741928",nom:"HEG Guerre au Gaspillage",adr:"Hattan Road 7, The Lakes",lat:25.0700,lng:55.1650,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:18,coeff:.45,sre:3327,idcC:90,ht:"Gaz",hsub:"CAD_Lignon",fp:.5,pat:"Objets d'intérêt",clIDC:2,clVet:4,cecb:true,invVB:6272000,idcVB:46.4},
-{id:"389617",nom:"HEM Petit Taux d'Isolation",adr:"Dubai Water Canal Walk 3, Safa Park",lat:25.1950,lng:55.2400,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:117,coeff:.26,sre:3683,idcC:102,ht:"Gaz",hsub:"Gaz",fp:.5,pat:"Zone protégée",elec:126652,co2:91135,clIDC:2,clVet:4,cecb:true,invVB:3903000,idcVB:50.8},
-{id:"625481",nom:"Centre Monument du Froid",adr:"Al Seef Heritage Lane 6, Bur Dubai",lat:25.2600,lng:55.2900,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:33,coeff:.28,sre:915,idcC:99,ht:"Mazout",hsub:"CAD Genilac",fp:.5,pat:"Classé",elec:13909,co2:33945,clIDC:2,clVet:4,cecb:true,invVB:1031000,idcVB:80},
-{id:"917364",nom:"UNI Remparts Contre le Chaud",adr:"Museum of the Future Ave 24, Emirates Towers",lat:25.2180,lng:55.2810,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:11,coeff:.39,sre:6125,idcC:91,ht:"Mazout",fp:.5,pat:"Zone protégée",elec:569970,co2:4617,clIDC:2,clVet:4,cecb:false},
-{id:"258149",nom:"UNI Le Mammouth Thermique",adr:"Saih Shuaib Road 16, Jebel Ali Free Zone",lat:25.0100,lng:55.0800,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:149,coeff:.81,sre:58837,idcC:42,ht:"Gaz",hsub:"CAD_Jonction",fp:1,pat:"Non protégé",elec:3074649,co2:490448,clIDC:1,clVet:1,cecb:true,invVB:18371300},
-{id:"693527",nom:"UNI Réaction Exo-gaspillique",adr:"Corniche Deira Promenade 30, Waterfront",lat:25.2900,lng:55.3150,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:21,coeff:.46,sre:5725,idcC:99,ht:"CAD réparti",fp:1,pat:"",elec:2292831,co2:594041,clIDC:2,clVet:4,cecb:false,invVB:2455000},
-{id:"836241",nom:"UNI Champ de Bataille Énergie",adr:"Dragon Mart Blvd 20, International City",lat:25.1720,lng:55.4050,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:42,coeff:.58,sre:5966,idcC:78,ht:"Gaz",hsub:"CAD_Lignon",fp:.5,pat:"Objets d'intérêt",elec:1382851,co2:604589,clIDC:1,clVet:4,cecb:true,invVB:8763000,idcVB:41.1},
-{id:"507362",nom:"Complexe Massivement Sous-Isolé",adr:"DIFC Gate Avenue 4, Financial Centre",lat:25.2130,lng:55.2780,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:297,coeff:.65,sre:60216,idcC:116,ht:"Chauffage à distance",fp:1,pat:"",elec:11361986,co2:990692,clIDC:2,clVet:3,cecb:false,invVB:257795000}
+{id:"847291",nom:"Château Courant d'Air",adr:"Sheikh Mohammed bin Rashid Blvd 4, Downtown Dubai",lat:25.1972,lng:55.2744,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:35,coeff:.50,sre:4411,idcC:144,ht:"Mazout",hsub:"PAC+Gaz",fp:.5,pat:"Objets d'intérêt",elec:137101,co2:212125,clIDC:3,clVet:4,cecb:false,cecbRaw:"",invVB:7490390},
+{id:"163854",nom:"Villa Passoire Thermique",adr:"Al Wasl Road 22, Jumeirah 1",lat:25.2105,lng:55.2500,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:90,coeff:.53,sre:2231,idcC:83,ht:"Gaz",hsub:"CAD SIG Champel",fp:1,pat:"Non protégé",elec:73818,co2:44546,clIDC:2,clVet:4,cecb:false,cecbRaw:"",invVB:3947500},
+{id:"529417",nom:"Palais du Thermostat Cassé",adr:"Crescent Road 10, Palm Jumeirah",lat:25.1124,lng:55.1390,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:197,coeff:.76,sre:6419,idcC:69,ht:"Gaz",hsub:"PAC+Gaz",fp:.5,pat:"Classé",elec:176358,co2:159151,clIDC:1,clVet:2,cecb:false,cecbRaw:"---",invVB:13306000},
+{id:"381926",nom:"Bunker du Radiateur Triste",adr:"Sheikh Zayed Road 66, Trade Centre",lat:25.2240,lng:55.2830,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:146,coeff:.66,sre:2817,idcC:77,ht:"Gaz",hsub:"PAC+Gaz",fp:.5,pat:"Classé",co2:138833,clIDC:1,clVet:3,cecb:false,cecbRaw:"",invVB:4590000},
+{id:"674235",nom:"Manoir du Pull Obligatoire",adr:"King Salman bin Abdulaziz Al Saud St 1, Dubai Marina",lat:25.0800,lng:55.1400,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:60,coeff:.44,sre:4719,idcC:103,ht:"Gaz",hsub:"Bois",fp:.5,pat:"Classé",elec:99554,co2:110056,clIDC:2,clVet:4,cecb:true,cecbRaw:"var_A",invVB:15500000,idcVB:49.7},
+{id:"912648",nom:"Chalet du Mazout Joyeux",adr:"Al Khail Road 15, Al Quoz",lat:25.1550,lng:55.2350,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:163,coeff:.60,sre:952,idcC:268,ht:"Gaz",hsub:"Chaudière bois",fp:.5,pat:"Classé",co2:201,clIDC:4,clVet:4,cecb:true,cecbRaw:"var_B",invVB:2843499,idcVB:43.1},
+{id:"258371",nom:"Tour de la Facture Salée",adr:"Jumeirah Beach Road 7, Umm Suqeim",lat:25.1530,lng:55.2000,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:56,coeff:.59,sre:5754,idcC:135,ht:"Mazout",hsub:"PAC+Gaz",fp:1,pat:"",elec:168753,co2:172964,clIDC:3,clVet:4,cecb:false,cecbRaw:"",invVB:4375157},
+{id:"743192",nom:"Citadelle du CAD Capricieux",adr:"Dubai Creek Road 45, Deira",lat:25.2710,lng:55.3100,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:140,coeff:.76,sre:19547,idcC:55,ht:"CAD tarifé",fp:.5,pat:"Objets d'intérêt",elec:609647,co2:972303,clIDC:1,clVet:2,cecb:false,cecbRaw:"---",invVB:23150000},
+{id:"496813",nom:"Forteresse des Finances Gelées",adr:"Airport Road 66, Al Garhoud",lat:25.2450,lng:55.3400,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:125,coeff:.76,sre:20841,idcC:57,ht:"CAD réparti",fp:1,pat:"Non protégé",elec:858559,co2:423523,clIDC:1,clVet:2,cecb:true,cecbRaw:"var_A",invVB:17610000,idcVB:31.9},
+{id:"691374",nom:"Cabane du Gaz Éternel",adr:"Al Fahidi Street 12, Bur Dubai",lat:25.2630,lng:55.2950,geoQ:'file',geoFallback:false,rp:"Dompteur des Maisons Chantantes",drt:"",rang:138,coeff:.49,sre:696,idcC:201,ht:"Gaz",hsub:"Bois",fp:.5,pat:"Classé",elec:16602,co2:117409,clIDC:4,clVet:4,cecb:true,cecbRaw:"var_C",invVB:2975999,idcVB:55.6},
+{id:"438527",nom:"Mégaplex de la Surchauffe",adr:"Happiness Street 22, Al Quoz Industrial",lat:25.1600,lng:55.2200,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:2,coeff:.45,sre:36600,idcC:123,ht:"Gaz",hsub:"Réseau CAD et géothermie",fp:1,pat:"Non protégé",elec:3978645,co2:1402104,clIDC:2,clVet:4,cecb:false,cecbRaw:"",invVB:10439803},
+{id:"264918",nom:"Commissariat du Gaspillage",adr:"Al Rigga Road 6, Deira",lat:25.2650,lng:55.3200,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:40,coeff:.44,sre:5192,idcC:143,ht:"Gaz",hsub:"CAD_Jonction",fp:1,pat:"Non protégé",elec:267694,co2:191819,clIDC:3,clVet:4,cecb:true,cecbRaw:"en cours",invVB:7884300},
+{id:"813467",nom:"Poste du Mazout Récalcitrant",adr:"Dubai-Al Ain Road 130, Silicon Oasis",lat:25.1200,lng:55.3800,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:301,coeff:.74,sre:374,idcC:202,ht:"Mazout",hsub:"PAC ou Bois",fp:1,pat:"Non protégé",elec:33281,co2:36927,clIDC:4,clVet:2,cecb:true,cecbRaw:"var_A",invVB:1520500},
+{id:"346189",nom:"QG des Courants d'Air",adr:"Umm Hurair Road 24, Oud Metha",lat:25.2350,lng:55.3100,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:161,coeff:.69,sre:12455,idcC:86,ht:"Gaz",hsub:"CAD GENILAC",fp:1,pat:"Non protégé",elec:3515251,co2:1348702,clIDC:2,clVet:3,cecb:false,cecbRaw:"",invVB:7411000},
+{id:"469352",nom:"Académie du Givre Intérieur",adr:"Gold Souk Lane 3, Deira",lat:25.2870,lng:55.2980,geoQ:'file',geoFallback:false,rp:"Commandant des Murs Mémoire",drt:"",rang:295,coeff:.35,sre:1824,idcC:190,ht:"CAD réparti",fp:.5,pat:"Inventaire",elec:52513,co2:32890,clIDC:4,clVet:4,cecb:true,cecbRaw:"var_B",invVB:0,idcVB:66.4},
+{id:"854271",nom:"École du Bonnet en Classe",adr:"Al Thanya Street 75, Business Bay",lat:25.1850,lng:55.2650,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:14,coeff:.49,sre:11036,idcC:108,ht:"Gaz",fp:1,pat:"Non protégé",elec:343128,co2:2817,clIDC:2,clVet:4,cecb:true,cecbRaw:"en cours",invVB:14965500},
+{id:"637189",nom:"Institut du Chauffage Perplexe",adr:"Marasi Drive 50, Business Bay",lat:25.1820,lng:55.2700,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:79,coeff:.46,sre:4124,idcC:117,ht:"Gaz",hsub:"Gaz condensation",fp:1,pat:"Non protégé",elec:62539,co2:128958,clIDC:2,clVet:4,cecb:true,cecbRaw:"var_A",invVB:5235000},
+{id:"918374",nom:"Gymnase du Frisson Sportif",adr:"Al Khawaneej Road 30, Al Khawaneej",lat:25.2520,lng:55.4200,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:101,coeff:.50,sre:2054,idcC:100,ht:"Mazout",fp:1,pat:"Non protégé",elec:41591,co2:47724,clIDC:2,clVet:4,cecb:true,cecbRaw:"à vérifier",invVB:3289500,idcVB:36.1},
+{id:"543628",nom:"CO du Parapluie Percé",adr:"Ras Al Khor Road 44, Festival City",lat:25.2200,lng:55.3600,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:63,coeff:.50,sre:11343,idcC:107,ht:"Gaz",hsub:"PAC EAU-EAU sur nappe",fp:.5,pat:"Objets d'intérêt",elec:150379,co2:196253,clIDC:2,clVet:4,cecb:true,cecbRaw:"var_A",invVB:11704075,idcVB:36.1},
+{id:"761352",nom:"École Budget Chauffage XXL",adr:"Discovery Gardens Main St 15, Jebel Ali",lat:25.0500,lng:55.1350,geoQ:'file',geoFallback:false,rp:"Professeur Silicium",drt:"",rang:55,coeff:.38,sre:1485,idcC:117,ht:"Mazout",hsub:"CAD_Lignon",fp:.5,pat:"Classé",elec:15379,co2:38645,clIDC:2,clVet:4,cecb:false,cecbRaw:"",invVB:3970999},
+{id:"348291",nom:"Collège Haute Tension",adr:"Dubai Hills Blvd 109, Dubai Hills Estate",lat:25.1300,lng:55.2400,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:26,coeff:.45,sre:10675,idcC:94,ht:"Gaz",hsub:"CAD_Lignon",fp:.5,pat:"Zone protégée",elec:207659,co2:9252,clIDC:2,clVet:4,cecb:false,cecbRaw:"---",invVB:15808250},
+{id:"952174",nom:"Centre Thermostat Fantôme B",adr:"Bluewaters Island Way 15, Bluewaters",lat:25.0810,lng:55.1280,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:4,coeff:.49,sre:8570,idcC:99,ht:"CAD réparti",fp:.5,pat:"Objets d'intérêt",elec:364429,co2:127092,clIDC:2,clVet:4,cecb:true,cecbRaw:"var_B",invVB:15955000,idcVB:42.4},
+{id:"283641",nom:"Centre Thermostat Fantôme XL",adr:"Expo Road 77, Expo City Dubai",lat:25.0575,lng:55.0620,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:1,coeff:.43,sre:13000,idcC:102,ht:"CAD réparti",fp:.5,pat:"Objets d'intérêt",elec:702117,co2:244858,clIDC:2,clVet:4,cecb:true,cecbRaw:"var_A",invVB:26165000,idcVB:51.1},
+{id:"794528",nom:"CO du Fond de Mazout",adr:"Warsan Road 35, International City",lat:25.1680,lng:55.4100,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:103,coeff:.62,sre:13632,idcC:116,ht:"Mazout",hsub:"PAC ou bois",fp:1,pat:"Non protégé",elec:174508,co2:255112,clIDC:2,clVet:3,cecb:true,cecbRaw:"en cours",invVB:12563000,idcVB:30},
+{id:"156372",nom:"CEC Chaudement Protégé",adr:"City Walk Promenade 29, Al Wasl",lat:25.2070,lng:55.2600,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:116,coeff:.70,sre:13499,idcC:110,ht:"Mazout",hsub:"CAD SIG Champel",fp:.5,pat:"Objets d'intérêt",elec:220594,co2:445918,clIDC:2,clVet:3,cecb:true,cecbRaw:"var_C",invVB:17679000,idcVB:36.4},
+{id:"873416",nom:"CFP du Radiateur Incompris",adr:"Dubai Science Park Ave 16, Al Barsha South",lat:25.1100,lng:55.1850,geoQ:'file',geoFallback:false,rp:"Docteur Chaudière",drt:"",rang:52,coeff:.61,sre:14218,idcC:125,ht:"CAD réparti",fp:1,pat:"Non protégé",elec:700556,co2:212120,clIDC:3,clVet:3,cecb:false,cecbRaw:"",invVB:9945000},
+{id:"715863",nom:"Tannerie du Baron Frileux",adr:"Kite Beach Road 26, Jumeirah 3",lat:25.1700,lng:55.2100,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:278,coeff:.50,sre:534,idcC:100,ht:"Gaz",fp:.5,pat:"Objets d'intérêt",clIDC:2,clVet:4,cecb:true,cecbRaw:"à vérifier",invVB:660996,idcVB:50},
+{id:"248931",nom:"Villa Mousquetaires du Froid",adr:"The Walk Promenade 42, JBR",lat:25.0770,lng:55.1350,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:29,coeff:.34,sre:516,idcC:156,ht:"Gaz",hsub:"PAC + Gaz",fp:.5,pat:"Ensembles 19e-20e",elec:8623,co2:30706,clIDC:3,clVet:4,cecb:true,cecbRaw:"var_A",invVB:2908800,idcVB:60},
+{id:"687215",nom:"ECG Exploratrice du Froid",adr:"2nd December Street 16, Al Satwa",lat:25.2300,lng:55.2620,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:38,coeff:.42,sre:5460,idcC:92,ht:"Mazout",hsub:"CAD GENILAC",fp:.5,pat:"Zone protégée",elec:121027,co2:133249,clIDC:2,clVet:4,cecb:true,cecbRaw:"var_B",invVB:11275500,idcVB:71.4},
+{id:"421368",nom:"CO du Renard Rusé mais Glacé",adr:"Sheikh Rashid Road 1, Nad Al Sheba",lat:25.1650,lng:55.3200,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:8,coeff:.30,sre:14688,idcC:110,ht:"Mazout",hsub:"PAC+Gaz",fp:1,pat:"Non protégé",elec:167039,co2:435670,clIDC:2,clVet:4,cecb:false,cecbRaw:"",invVB:1630000},
+{id:"153287",nom:"CO des Quatre Vents Glacés",adr:"Nad Al Hamar Road 150, Nad Al Hamar",lat:25.2050,lng:55.3800,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:67,coeff:.64,sre:11346,idcC:98,ht:"Mazout",hsub:"CAD_Lignon",fp:1,pat:"Non protégé",elec:201768,co2:345962,clIDC:2,clVet:3,cecb:true,cecbRaw:"en cours",invVB:10532000,idcVB:37.2},
+{id:"362519",nom:"CO Nid de Courants d'Air",adr:"Al Yalayis Road 232, Dubai Investment Park",lat:25.0250,lng:55.1550,geoQ:'file',geoFallback:false,rp:"Fantôme en Mission",drt:"",rang:32,coeff:.57,sre:9596,idcC:86,ht:"Mazout",hsub:"Bois",fp:1,pat:"Non protégé",elec:193962,co2:212098,clIDC:2,clVet:4,cecb:true,cecbRaw:"var_A",invVB:10671000,idcVB:47.2},
+{id:"814673",nom:"Atelier du Glaçon Créatif",adr:"Al Mustaqbal Street 30, World Trade Centre",lat:25.2270,lng:55.2850,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:87,coeff:.33,sre:8910,idcC:97,ht:"Mazout",hsub:"PAC+Gaz",fp:1,pat:"",elec:24403,co2:282583,clIDC:2,clVet:4,cecb:true,cecbRaw:"var_A",invVB:3805000,idcVB:21.4},
+{id:"563182",nom:"HEdS Champagne Glacée",adr:"Ghaf Tree Street 47, The Sustainable City",lat:25.0900,lng:55.3100,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:248,coeff:.78,sre:8153,idcC:95,ht:"Gaz",hsub:"CAD Champel",fp:1,pat:"Non protégé",elec:318239,co2:398647,clIDC:2,clVet:2,cecb:true,cecbRaw:"var_C",invVB:10128000,idcVB:30.6},
+{id:"741928",nom:"HEG Guerre au Gaspillage",adr:"Hattan Road 7, The Lakes",lat:25.0700,lng:55.1650,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:18,coeff:.45,sre:3327,idcC:90,ht:"Gaz",hsub:"CAD_Lignon",fp:.5,pat:"Objets d'intérêt",clIDC:2,clVet:4,cecb:true,cecbRaw:"en cours",invVB:6272000,idcVB:46.4},
+{id:"389617",nom:"HEM Petit Taux d'Isolation",adr:"Dubai Water Canal Walk 3, Safa Park",lat:25.1950,lng:55.2400,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:117,coeff:.26,sre:3683,idcC:102,ht:"Gaz",hsub:"Gaz",fp:.5,pat:"Zone protégée",elec:126652,co2:91135,clIDC:2,clVet:4,cecb:true,cecbRaw:"à vérifier",invVB:3903000,idcVB:50.8},
+{id:"625481",nom:"Centre Monument du Froid",adr:"Al Seef Heritage Lane 6, Bur Dubai",lat:25.2600,lng:55.2900,geoQ:'file',geoFallback:false,rp:"Chevalier du Triple Vitrage",drt:"",rang:33,coeff:.28,sre:915,idcC:99,ht:"Mazout",hsub:"CAD Genilac",fp:.5,pat:"Classé",elec:13909,co2:33945,clIDC:2,clVet:4,cecb:true,cecbRaw:"var_A",invVB:1031000,idcVB:80},
+{id:"917364",nom:"UNI Remparts Contre le Chaud",adr:"Museum of the Future Ave 24, Emirates Towers",lat:25.2180,lng:55.2810,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:11,coeff:.39,sre:6125,idcC:91,ht:"Mazout",fp:.5,pat:"Zone protégée",elec:569970,co2:4617,clIDC:2,clVet:4,cecb:false,cecbRaw:"",invVB:0},
+{id:"258149",nom:"UNI Le Mammouth Thermique",adr:"Saih Shuaib Road 16, Jebel Ali Free Zone",lat:25.0100,lng:55.0800,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:149,coeff:.81,sre:58837,idcC:42,ht:"Gaz",hsub:"CAD_Jonction",fp:1,pat:"Non protégé",elec:3074649,co2:490448,clIDC:1,clVet:1,cecb:true,cecbRaw:"var_B",invVB:18371300},
+{id:"693527",nom:"UNI Réaction Exo-gaspillique",adr:"Corniche Deira Promenade 30, Waterfront",lat:25.2900,lng:55.3150,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:21,coeff:.46,sre:5725,idcC:99,ht:"CAD réparti",fp:1,pat:"",elec:2292831,co2:594041,clIDC:2,clVet:4,cecb:false,cecbRaw:"---",invVB:2455000},
+{id:"836241",nom:"UNI Champ de Bataille Énergie",adr:"Dragon Mart Blvd 20, International City",lat:25.1720,lng:55.4050,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:42,coeff:.58,sre:5966,idcC:78,ht:"Gaz",hsub:"CAD_Lignon",fp:.5,pat:"Objets d'intérêt",elec:1382851,co2:604589,clIDC:1,clVet:4,cecb:true,cecbRaw:"en cours",invVB:8763000,idcVB:41.1},
+{id:"507362",nom:"Complexe Massivement Sous-Isolé",adr:"DIFC Gate Avenue 4, Financial Centre",lat:25.2130,lng:55.2780,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:297,coeff:.65,sre:60216,idcC:116,ht:"Chauffage à distance",fp:1,pat:"",elec:11361986,co2:990692,clIDC:2,clVet:3,cecb:false,cecbRaw:"",invVB:257795000}
 ];detectGeoContext();assignFallbackCoords();popRP();popRPProject();syncAllW();ren();updateSourceInfo(S.length,'Échantillon intégré','sample')}
 
 window.addEventListener('load',loadSample);
