@@ -234,7 +234,7 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 <select id="fPh" onchange="renR();renM()"><option value="all">Toutes phases</option><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="4">P4</option></select>
 <select id="fFo" onchange="renR();renM()"><option value="all">Tout chauffage</option><option value="fos">🔥 Fossiles</option><option value="ren">♻️ Renouvelables</option></select>
 <select id="fPa" onchange="renR();renM()"><option value="all">Tout patrimoine</option><option value="Classé">🏛️ Classé</option><option value="Zone protégée">🛡 Zone prot.</option><option value="Inventaire">📋 Inventaire</option><option value="Objets d'intérêt">⭐ Obj. int.</option><option value="Ensembles 19e-20e">🏘 Ensembles</option><option value="Non protégé">Non protégé</option></select>
-<select id="fRpj" onchange="renR();renM()"><option value="all">Responsable projet : tous</option></select>
+<select id="fRpj" onchange="renR();renM()"><option value="all">Responsable projet (Rp)</option></select>
 <input type="text" id="fSe" placeholder="🔍 Rechercher…" oninput="renR();renM()">
 </div>
 <div style="overflow:auto;max-height:72vh">
@@ -695,7 +695,7 @@ $('alList').innerHTML=al.map(a=>'<div class="alert-card al-'+(a.t==='err'?'err':
    MODULE 6 : CLASSEMENT — Tableau, détail radar, notes
    ================================================================ */
 function popRP(){const s=new Set();S.forEach(si=>{if(si.rp)s.add(si.rp)});const sorted=[...s].sort();const el=$('gRP');const cur=el.value;el.innerHTML='<option value="all">Tous les RP</option>';sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});el.value=cur||'all'}
-function popRPProject(){const s=new Set();S.forEach(si=>{if(si.drt)s.add(si.drt)});const sorted=[...s].sort();const el=$('fRpj');if(!el)return;const cur=el.value;el.innerHTML='<option value="all">Responsable projet : tous</option>';sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});el.value=cur||'all'}
+function popRPProject(){const s=new Set();S.forEach(si=>{if(si.drt)s.add(si.drt)});const sorted=[...s].sort();const el=$('fRpj');if(!el)return;const cur=el.value;el.innerHTML='<option value="all">Responsable projet (Rp)</option>';sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});el.value=cur||'all'}
 
 function renR(){
 expandedRow=null;
