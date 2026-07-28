@@ -489,7 +489,7 @@ function getCECBStatus(s){
 function cecbBadge(s){
   const st=getCECBStatus(s);
   if(st.state==='ok')return'<span class="bg cecb-ok" title="Audit CECB+ réalisé'+(st.letter?' (variante '+st.letter+')':'')+'">✓'+(st.letter?' '+st.letter:'')+'</span>';
-  if(st.state==='wip')return'<span class="bg cecb-wip" title="'+(s.cecbRaw||'En cours')+'">👤</span>';
+  if(st.state==='wip')return'<span class="bg cecb-wip" title="'+(s.cecbRaw||'En cours')+'">⏳</span>';
   return'<span class="bg cecb-ko" title="Aucun audit CECB+">✗</span>'}
 
 function patMalus(pat){if(!pat)return 0;if(pat.includes('Classé'))return -50;if(pat.includes('Zone protégée')||pat.includes('Zone prot'))return -40;if(pat.includes('Inventaire'))return -30;if(pat.includes('Ensembles'))return -20;if(pat.includes('Objets')||pat.includes("intérêt"))return -10;return 0}
