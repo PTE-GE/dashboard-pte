@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -6,7 +7,6 @@
 <title>Priorisation PTE — Carte</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--pri:#1e3a5f;--sec:#2d6a9f;--acc:#e8a838;--grn:#27ae60;--red:#e74c3c;--bg:#f0f4f8}
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:#333;font-size:14px}
@@ -27,7 +27,6 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 .detail-td{background:#f4f7fa!important;padding:10px 16px!important;border-bottom:2px solid var(--acc)!important}
 .bg{display:inline-block;padding:1px 6px;border-radius:9px;font-size:.65rem;font-weight:700;color:#fff;white-space:nowrap}
 .bg-p1{background:#e74c3c}.bg-p2{background:#e67e22}.bg-p3{background:#3498db}.bg-p4{background:#95a5a6}
-.bg-cls{background:#8e44ad}.bg-zpro{background:#2980b9}.bg-inv{background:#16a085}.bg-odi{background:#d4a017}.bg-ens{background:#c0392b}.bg-np{background:#bdc3c7;color:#555}
 .sb{height:16px;border-radius:3px;background:#e2e8f0;overflow:hidden;min-width:60px}
 .sf{height:100%;border-radius:3px;transition:width .3s;display:flex;align-items:center;justify-content:flex-end;padding-right:3px;font-size:.63rem;font-weight:700;color:#fff}
 .kpi{text-align:center;padding:8px}.kpi .n{font-size:1.45rem;font-weight:800;color:var(--pri)}.kpi .l{font-size:.7rem;color:#666;margin-top:2px}
@@ -51,6 +50,13 @@ tr.row-click{cursor:pointer}tr.row-expanded>td{background:#eaf2f8;border-bottom:
 @media(max-width:768px){.sg{grid-template-columns:100px 1fr 32px}table{font-size:.65rem}th,td{padding:3px 2px}.pnl{padding:8px}.m-glossary{grid-template-columns:1fr}.m-flow{flex-direction:column}.m-flow-arrow{transform:rotate(90deg)}}
 a.tab{text-decoration:none;display:inline-flex;align-items:center;line-height:1}
 .bt-x{background:rgba(255,255,255,.18);color:#fff}.bt-x:hover{background:rgba(255,255,255,.32)}
+.bt-n{background:#8e44ad;color:#fff}.bt-n:hover{background:#6c3483}
+.pop{display:none;position:absolute;right:0;top:calc(100% + 7px);z-index:300;background:#fff;color:#333;border-radius:10px;box-shadow:0 6px 26px rgba(0,0,0,.28);padding:12px;width:275px;text-align:left}
+.pop.on{display:block}
+.pop-t{font-weight:700;color:var(--pri);font-size:.8rem;margin-bottom:5px}
+.pop-i{font-size:.72rem;color:#555;margin-bottom:8px}
+.pop-h{font-size:.64rem;color:#8a94a0;margin-top:9px;line-height:1.55}
+.libwarn{background:#fef5e7;border-bottom:2px solid #e8a838;color:#7a5900;padding:9px 18px;font-size:.76rem;line-height:1.55}
 #leafMap{z-index:1}
 .map-tooltip-custom{font-size:.75rem!important;line-height:1.5!important;padding:8px 12px!important}
 .map-legend{background:#fff;padding:8px 12px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.2);font-size:.7rem;line-height:1.8}
@@ -76,7 +82,17 @@ a.tab{text-decoration:none;display:inline-flex;align-items:center;line-height:1}
 <button class="bt bt-i bt-s" onclick="$('fIn').click()">📂 Importer</button>
 <input type="file" id="fIn" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFileImport(event)">
 <button class="bt bt-w bt-s" id="btnRefresh" onclick="refreshData()" style="display:none">🔄</button>
-<button class="bt bt-p bt-s" onclick="exportGeoCSV()">📥 Export</button>
+<div style="position:relative">
+<button class="bt bt-n bt-s" onclick="tglNotes(event)" title="Exporter ou importer les notes de site">📝 Notes</button>
+<div id="notePop" class="pop" onclick="event.stopPropagation()">
+<div class="pop-t">📝 Notes / Commentaires</div>
+<div class="pop-i" id="notePopInfo"></div>
+<button class="bt bt-p bt-s" style="width:100%;margin-bottom:5px" onclick="exportNotes()">📥 Exporter les notes (CSV)</button>
+<button class="bt bt-i bt-s" style="width:100%" onclick="$('nIn').click()">📂 Importer des notes (CSV)</button>
+<input type="file" id="nIn" accept=".csv,.txt" style="display:none" onchange="handleNotesImport(event)">
+<div class="pop-h">Fichier indépendant des données : colonnes <b>N°</b> et <b>Note</b>. Les notes existantes sont complétées, jamais effacées, et survivent aux mises à jour du fichier Excel.</div>
+</div>
+</div>
 <button class="bt bt-s bt-x" onclick="clearAllData()" title="Effacer les données importées et revenir à l'échantillon">🗑</button>
 </div>
 </div>
@@ -99,13 +115,15 @@ a.tab{text-decoration:none;display:inline-flex;align-items:center;line-height:1}
 <div class="cd">
 <h3>🗺️ Localisation des sites</h3>
 <p style="font-size:.76rem;color:#666;margin-bottom:4px">Carte interactive. Les <b>filtres Classement</b> et le <b>filtre RP</b> sont appliqués.</p>
-<div class="geo-tip" id="geoTip">💡 <b>Astuce :</b> Utilisez <b>📥 Export</b> après le premier chargement. Au prochain import, les coordonnées seront lues directement du fichier.</div>
+<div class="geo-tip" id="geoTip">💡 <b>Astuce :</b> Les adresses sans coordonnées sont géolocalisées une seule fois, puis mémorisées par le navigateur. Pour un résultat immédiat et définitif, ajoutez deux colonnes <b>Latitude</b> et <b>Longitude</b> au fichier source.</div>
 <div class="fb">
 <div class="fb">
 <select id="fPh" onchange="renM()"><option value="all">Toutes phases</option><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="4">P4</option></select>
 <select id="fFo" onchange="renM()"><option value="all">Tout chauffage</option><option value="fos">🔥 Fossiles</option><option value="ren">♻️ Renouvelables</option></select>
 <select id="fPa" onchange="renM()"><option value="all">Tout patrimoine</option><option value="Classé">🏛️ Classé</option><option value="Zone protégée">🛡 Zone prot.</option><option value="Inventaire">📋 Inventaire</option><option value="Objets d'intérêt">⭐ Obj. int.</option><option value="Ensembles 19e-20e">🏘 Ensembles</option><option value="Non protégé">Non protégé</option></select>
 <select id="fRpj" onchange="renM()"><option value="all">Responsable projet : tous</option></select>
+<select id="fCe" onchange="renM()"><option value="all">Tout CECB+</option><option value="green">🟢 Réalisé (var. A/B/C)</option><option value="orange">🟠 En cours / à vérifier</option><option value="red">🔴 Aucun audit</option></select>
+<select id="fEt" onchange="renM()"><option value="all">État projet : tous</option></select>
 <input type="text" id="fSe" placeholder="🔍 Rechercher…" oninput="renM()">
 </div>
 </div>
@@ -147,15 +165,34 @@ let lastImportRPMissing=false,lastAlerts=[];
 function $(id){return document.getElementById(id)}
 function toast(m,t){const e=$('toast');if(!e)return;e.textContent=m;e.className='toast '+t+' sh';setTimeout(()=>e.classList.remove('sh'),3e3)}
 
-/* ---------- PERSISTANCE PARTAGÉE ENTRE LES 3 PAGES ---------- */
+/* ---------- PERSISTANCE PARTAGÉE ENTRE LES 3 PAGES ----------
+   Deux supports possibles :
+   · localStorage — le cas normal (HTTP, HTTPS, et fichier local sous
+     Chrome, Edge ou Firefox) ;
+   · window.name — repli pour Safari, qui interdit localStorage aux
+     fichiers ouverts en double-clic. Son contenu suit la navigation
+     à l'intérieur du même onglet, ce qui couvre exactement l'usage
+     des liens d'en-tête entre les trois pages.                       */
 const LS_DATA='pte_data_v2',LS_STATE='pte_state_v2';
-const HAS_LS=(function(){try{localStorage.setItem('__pte','1');localStorage.removeItem('__pte');return true}catch(e){return false}})();
+const STORE=(function(){
+  try{localStorage.setItem('__pte','1');localStorage.removeItem('__pte');
+    return{kind:'local',
+      get:function(k){return localStorage.getItem(k)},
+      set:function(k,v){localStorage.setItem(k,v)},
+      del:function(k){localStorage.removeItem(k)}}}catch(e){}
+  function rd(){try{const o=JSON.parse(window.name||'{}');return(o&&o.__pte)?o:{__pte:1}}catch(e){return{__pte:1}}}
+  function wr(o){try{window.name=JSON.stringify(o)}catch(e){}}
+  return{kind:'window',
+    get:function(k){const o=rd();return o[k]==null?null:o[k]},
+    set:function(k,v){const o=rd();o[k]=v;wr(o)},
+    del:function(k){const o=rd();delete o[k];wr(o)}}})();
+const HAS_LS=STORE.kind==='local';
 let _lsWriting=false;
-function saveData(){if(!HAS_LS)return;try{_lsWriting=true;localStorage.setItem(LS_DATA,JSON.stringify({sites:S,fileName:lastFileName,ts:Date.now()}))}catch(e){toast('⚠️ Jeu de données trop volumineux pour la mémoire du navigateur','wr')}finally{_lsWriting=false}}
-function saveState(){if(!HAS_LS)return;try{_lsWriting=true;localStorage.setItem(LS_STATE,JSON.stringify({W:W,phaseOverrides:phaseOverrides,siteNotes:siteNotes,rp:(($('gRP')||{}).value)||'all'}))}catch(e){}finally{_lsWriting=false}}
-function loadState(){if(!HAS_LS)return null;try{const o=JSON.parse(localStorage.getItem(LS_STATE)||'null');if(!o)return null;if(o.W)W={...W,...o.W};if(o.phaseOverrides)phaseOverrides=o.phaseOverrides;if(o.siteNotes)siteNotes=o.siteNotes;return o}catch(e){return null}}
-function loadData(){if(!HAS_LS)return false;try{const o=JSON.parse(localStorage.getItem(LS_DATA)||'null');if(!o||!o.sites||!o.sites.length)return false;S=o.sites;lastFileName=o.fileName||'fichier importé';return true}catch(e){return false}}
-function clearAllData(){if(!confirm('Effacer les données importées et revenir au jeu d’exemple ?\n(Pondérations, notes et phases ajustées seront également réinitialisées.)'))return;try{localStorage.removeItem(LS_DATA);localStorage.removeItem(LS_STATE)}catch(e){}location.reload()}
+function saveData(){try{_lsWriting=true;STORE.set(LS_DATA,JSON.stringify({sites:S,fileName:lastFileName,ts:Date.now()}))}catch(e){toast('⚠️ Jeu de données trop volumineux pour la mémoire du navigateur','wr')}finally{_lsWriting=false}}
+function saveState(){try{_lsWriting=true;STORE.set(LS_STATE,JSON.stringify({W:W,phaseOverrides:phaseOverrides,siteNotes:siteNotes,rp:(($('gRP')||{}).value)||'all'}))}catch(e){}finally{_lsWriting=false}}
+function loadState(){try{const o=JSON.parse(STORE.get(LS_STATE)||'null');if(!o)return null;if(o.W)W={...W,...o.W};if(o.phaseOverrides)phaseOverrides=o.phaseOverrides;if(o.siteNotes)siteNotes=o.siteNotes;return o}catch(e){return null}}
+function loadData(){try{const o=JSON.parse(STORE.get(LS_DATA)||'null');if(!o||!o.sites||!o.sites.length)return false;S=o.sites;lastFileName=o.fileName||'fichier importé';return true}catch(e){return false}}
+function clearAllData(){if(!confirm('Effacer les données importées et revenir au jeu d’exemple ?\n(Pondérations, notes et phases ajustées seront également réinitialisées.)'))return;try{STORE.del(LS_DATA);STORE.del(LS_STATE)}catch(e){}location.reload()}
 
 /* ---------- PONDÉRATIONS ---------- */
 function uW(src){
@@ -187,6 +224,298 @@ function sw(id,b){
 function ren(){if(typeof renderPage==='function')renderPage()}
 
 
+/* ================================================================
+   LECTEUR .XLSX AUTONOME
+   Un fichier .xlsx est une archive ZIP contenant du XML. Ce module
+   fait les trois étapes lui-même — décompression DEFLATE, lecture de
+   l'archive, analyse du XML — pour que l'import ne dépende d'aucune
+   librairie externe ni d'aucun accès réseau.
+   ================================================================ */
+
+/* ---------- 1. DEFLATE (RFC 1951) ---------- */
+function inflateRaw(src){
+  let out=new Uint8Array(Math.max(4096,src.length*5)),olen=0;
+  let pos=0,bitbuf=0,bitcnt=0;
+  function grow(n){if(olen+n<=out.length)return;let s=out.length;while(s<olen+n)s*=2;const o=new Uint8Array(s);o.set(out);out=o}
+  function bits(n){if(!n)return 0;while(bitcnt<n){if(pos>=src.length)throw new Error('flux compressé tronqué');bitbuf|=src[pos++]<<bitcnt;bitcnt+=8}
+    const v=bitbuf&((1<<n)-1);bitbuf>>>=n;bitcnt-=n;return v}
+  function tree(lens,from,to){
+    const counts=new Int32Array(16);
+    for(let i=from;i<to;i++)counts[lens[i]]++;
+    counts[0]=0;
+    const offs=new Int32Array(16);let sum=0;
+    for(let i=1;i<16;i++){offs[i]=sum;sum+=counts[i]}
+    const symbols=new Int32Array(sum);
+    for(let i=from;i<to;i++)if(lens[i])symbols[offs[lens[i]]++]=i-from;
+    return{counts:counts,symbols:symbols}}
+  function decode(t){
+    let code=0,first=0,index=0;
+    for(let len=1;len<16;len++){
+      code|=bits(1);
+      const count=t.counts[len];
+      if(code-first<count)return t.symbols[index+(code-first)];
+      index+=count;first+=count;first<<=1;code<<=1}
+    throw new Error('code Huffman invalide')}
+  const LB=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  const LE=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+  const DB=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+  const DE=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+  const ORD=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+  let fixL=null,fixD=null;
+  for(;;){
+    const last=bits(1),type=bits(2);
+    if(type===0){
+      bitbuf=0;bitcnt=0;
+      const len=src[pos]|(src[pos+1]<<8);pos+=4;
+      grow(len);out.set(src.subarray(pos,pos+len),olen);olen+=len;pos+=len;
+    }else{
+      let lt,dt;
+      if(type===1){
+        if(!fixL){
+          const l=new Uint8Array(288);let i=0;
+          for(;i<144;i++)l[i]=8;for(;i<256;i++)l[i]=9;for(;i<280;i++)l[i]=7;for(;i<288;i++)l[i]=8;
+          fixL=tree(l,0,288);
+          const d=new Uint8Array(30);for(i=0;i<30;i++)d[i]=5;fixD=tree(d,0,30)}
+        lt=fixL;dt=fixD;
+      }else if(type===2){
+        const hlit=bits(5)+257,hdist=bits(5)+1,hclen=bits(4)+4;
+        const cl=new Uint8Array(19);
+        for(let i=0;i<hclen;i++)cl[ORD[i]]=bits(3);
+        const clt=tree(cl,0,19);
+        const lens=new Uint8Array(hlit+hdist);let n=0;
+        while(n<lens.length){
+          const sym=decode(clt);
+          if(sym<16)lens[n++]=sym;
+          else if(sym===16){const p=lens[n-1];let r=3+bits(2);while(r--)lens[n++]=p}
+          else if(sym===17){let r=3+bits(3);while(r--)lens[n++]=0}
+          else{let r=11+bits(7);while(r--)lens[n++]=0}}
+        lt=tree(lens,0,hlit);dt=tree(lens,hlit,hlit+hdist);
+      }else throw new Error('bloc compressé de type inconnu');
+      for(;;){
+        let sym=decode(lt);
+        if(sym<256){grow(1);out[olen++]=sym}
+        else if(sym===256)break;
+        else{
+          sym-=257;
+          const length=LB[sym]+bits(LE[sym]);
+          const ds=decode(dt);
+          const dist=DB[ds]+bits(DE[ds]);
+          if(dist>olen)throw new Error('référence arrière invalide');
+          grow(length);
+          for(let k=0;k<length;k++){out[olen]=out[olen-dist];olen++}}}
+    }
+    if(last)break}
+  return out.subarray(0,olen)}
+
+/* ---------- 2. Archive ZIP ---------- */
+const _td=new TextDecoder('utf-8');
+function unzip(buf){
+  const u=buf instanceof Uint8Array?buf:new Uint8Array(buf);
+  const dv=new DataView(u.buffer,u.byteOffset,u.byteLength);
+  let i=u.length-22;const min=Math.max(0,u.length-22-65535);
+  for(;i>=min;i--)if(dv.getUint32(i,true)===0x06054b50)break;
+  if(i<min)throw new Error('ce fichier n’est pas une archive .xlsx valide');
+  const n=dv.getUint16(i+10,true);let p=dv.getUint32(i+16,true);
+  const files={};
+  for(let k=0;k<n;k++){
+    if(dv.getUint32(p,true)!==0x02014b50)throw new Error('archive .xlsx corrompue');
+    const method=dv.getUint16(p+10,true);
+    const csize=dv.getUint32(p+20,true);
+    const nlen=dv.getUint16(p+28,true),elen=dv.getUint16(p+30,true),clen=dv.getUint16(p+32,true);
+    const lho=dv.getUint32(p+42,true);
+    const name=_td.decode(u.subarray(p+46,p+46+nlen));
+    if(csize===0xFFFFFFFF||lho===0xFFFFFFFF)throw new Error('archive ZIP64 non prise en charge');
+    const lnlen=dv.getUint16(lho+26,true),lelen=dv.getUint16(lho+28,true);
+    files[name]={method:method,start:lho+30+lnlen+lelen,csize:csize};
+    p+=46+nlen+elen+clen}
+  return{u:u,files:files}}
+function zipText(z,name){
+  const f=z.files[name];if(!f)return null;
+  const raw=z.u.subarray(f.start,f.start+f.csize);
+  if(f.method===0)return _td.decode(raw);
+  if(f.method!==8)throw new Error('méthode de compression non prise en charge ('+f.method+')');
+  return _td.decode(inflateRaw(raw))}
+
+/* ---------- 3. XML du classeur ---------- */
+function _xml(s){
+  if(!s)return null;
+  const d=new DOMParser().parseFromString(s,'application/xml');
+  if(d.getElementsByTagName('parsererror').length)throw new Error('XML du classeur illisible');
+  return d}
+function _colIdx(ref){
+  let n=0,i=0;
+  for(;i<ref.length;i++){const c=ref.charCodeAt(i);if(c<65||c>90)break;n=n*26+(c-64)}
+  return i?n-1:-1}
+function _txt(el,tag){
+  const ts=el.getElementsByTagName(tag);let s='';
+  for(let i=0;i<ts.length;i++)s+=ts[i].textContent;
+  return s}
+
+function xlsxToRows(buf){
+  const z=unzip(buf);
+  /* chaînes partagées */
+  const sst=[];
+  const ssDoc=_xml(zipText(z,'xl/sharedStrings.xml'));
+  if(ssDoc){const si=ssDoc.getElementsByTagName('si');for(let i=0;i<si.length;i++)sst.push(_txt(si[i],'t'))}
+  /* liste des feuilles */
+  const wb=_xml(zipText(z,'xl/workbook.xml'));
+  const relDoc=_xml(zipText(z,'xl/_rels/workbook.xml.rels'));
+  const rels={};
+  if(relDoc){const rl=relDoc.getElementsByTagName('Relationship');
+    for(let i=0;i<rl.length;i++)rels[rl[i].getAttribute('Id')]=rl[i].getAttribute('Target')}
+  const paths=[];
+  if(wb){
+    const sh=wb.getElementsByTagName('sheet');
+    for(let i=0;i<sh.length;i++){
+      const rid=sh[i].getAttribute('r:id')||sh[i].getAttribute('id')||
+                sh[i].getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+      let t=rels[rid];
+      if(!t)t='worksheets/sheet'+(i+1)+'.xml';
+      paths.push(t.charAt(0)==='/'?t.slice(1):'xl/'+t.replace(/^\.\//,''))}}
+  if(!paths.length)paths.push('xl/worksheets/sheet1.xml');
+  /* on retient la feuille la plus large, comme la version précédente */
+  let best=null,bestW=-1;
+  for(const p of paths){
+    const xml=zipText(z,p);if(!xml)continue;
+    const rows=_sheetRows(_xml(xml),sst);
+    let w=0;for(const r of rows)if(r.length>w)w=r.length;
+    if(w>bestW){bestW=w;best=rows}}
+  if(!best)throw new Error('aucune feuille de calcul lisible dans le fichier');
+  return best}
+
+function _sheetRows(doc,sst){
+  const out=[],rs=doc.getElementsByTagName('row');
+  for(let i=0;i<rs.length;i++){
+    const cs=rs[i].getElementsByTagName('c'),arr=[];
+    let filled=false;
+    for(let j=0;j<cs.length;j++){
+      const c=cs[j],t=c.getAttribute('t');
+      let ci=_colIdx(c.getAttribute('r')||'');
+      if(ci<0)ci=arr.length;
+      let v='';
+      if(t==='inlineStr')v=_txt(c,'t');
+      else{
+        const vn=c.getElementsByTagName('v')[0];
+        const raw=vn?vn.textContent:'';
+        if(raw===''&&t!=='s')v='';
+        else if(t==='s')v=sst[+raw]!==undefined?sst[+raw]:'';
+        else if(t==='b')v=raw==='1';
+        else if(t==='e')v='';
+        else if(t==='str')v=raw;
+        else{const num=+raw;v=(raw!==''&&!isNaN(num))?num:raw}}
+      while(arr.length<ci)arr.push('');
+      arr[ci]=v;
+      if(v!==''&&v!==null)filled=true}
+    if(filled)out.push(arr)}
+  return out}
+
+
+/* ================================================================
+   AUDIT CECB+ — classification à 6 statuts / 3 familles de couleur
+   Valeurs rencontrées dans le fichier source :
+     (vide) · --- · à vérifier · en cours · var_A · var_B · var_C
+   ================================================================ */
+const CECB_DEF={
+  none   :{pts:0 ,ico:'✗',txt:'' ,col:'#e74c3c',fam:'red'   ,lbl:'Aucun audit CECB+ réalisé / non prévu'},
+  pending:{pts:16,ico:'⏳',txt:'' ,col:'#e67e22',fam:'orange',lbl:'Audit CECB+ en cours de réalisation (crédit partiel)'},
+  check  :{pts:0 ,ico:'👤',txt:'' ,col:'#e67e22',fam:'orange',lbl:'Statut douteux, à confirmer manuellement'},
+  varA   :{pts:33,ico:'✓',txt:'A',col:'#27ae60',fam:'green' ,lbl:'Audit CECB+ réalisé — variante A retenue'},
+  varB   :{pts:33,ico:'✓',txt:'B',col:'#27ae60',fam:'green' ,lbl:'Audit CECB+ réalisé — variante B retenue'},
+  varC   :{pts:33,ico:'✓',txt:'C',col:'#27ae60',fam:'green' ,lbl:'Audit CECB+ réalisé — variante C retenue'}};
+function cecbStatus(v){
+  const t=String(v==null?'':v).trim().toLowerCase();
+  if(!t||t==='---'||t==='--'||t==='-'||t==='0')return'none';
+  if(/var[_\s.-]*a\b/.test(t))return'varA';
+  if(/var[_\s.-]*b\b/.test(t))return'varB';
+  if(/var[_\s.-]*c\b/.test(t))return'varC';
+  if(/en\s*cours|demand|prio\s*\d|planifi/.test(t))return'pending';
+  if(/v[ée]rifier|douteux|\?/.test(t))return'check';
+  if(/oui|r[ée]alis|termin|valid/.test(t))return'varB';
+  return'check'}
+function cecbInfo(s){return CECB_DEF[(s&&s.cecbSt)||'none']||CECB_DEF.none}
+function cecbBg(s){const d=cecbInfo(s);
+  return'<span class="bg" title="'+d.lbl+(s&&s.cecbRaw?' ('+s.cecbRaw+')':'')+'" style="background:'+d.col+'">'+d.ico+(d.txt?' '+d.txt:'')+'</span>'}
+/* Normalisation : sites importés d'anciennes versions ou jeu d'exemple */
+function normSites(){S.forEach(function(s,i){
+  if(!s.cecbSt)s.cecbSt=(s.cecbRaw!==undefined&&s.cecbRaw!=='')?cecbStatus(s.cecbRaw):(s.cecb?['varA','varB','varC'][i%3]:'none');
+  if(s.cecbRaw===undefined)s.cecbRaw='';
+  s.cecb=cecbInfo(s).pts===33})}
+
+/* ---------- BADGES ---------- */
+const PAT_MAP=[['Classé','🏛','Classé'],['Zone','🛡','Zone protégée'],['Inventaire','📋','Inventaire'],
+               ['Objets','⭐',"Objets d'intérêt"],['Ensembles','🏘','Ensembles 19e-20e']];
+function patBg(p){
+  if(!p||p==='Non protégé')return'<span style="color:#c8ced6" title="Non protégé">—</span>';
+  for(let i=0;i<PAT_MAP.length;i++)if(p.includes(PAT_MAP[i][0]))
+    return'<span title="'+PAT_MAP[i][2]+'" style="cursor:help;font-size:.95rem">'+PAT_MAP[i][1]+'</span>';
+  return'<span style="color:#7b8794;font-size:.65rem" title="'+p+'">'+p+'</span>'}
+function hBg(t){const f=String(t||'').toLowerCase().trim();
+  const b=(c,x,ti)=>'<span class="bg" style="background:'+c+'"'+(ti?' title="'+ti+'"':'')+'>'+x+'</span>';
+  if(!f)return b('#bbb','?','Type d’énergie non renseigné');
+  if(/inexistant|aucun|sans chauff/.test(f))return b('#7f8c8d','⛔ Inexistant','Aucune installation de chauffage');
+  if(f.includes('pac')&&f.includes('gaz'))return b('#d35400','🔥♻️ PAC+Gaz','Installation hybride pompe à chaleur + gaz');
+  if(f.includes('mazout'))return b('#c0392b','🔥 Mazout');
+  if(/cad|distance|cadiom/.test(f))return b('#2980b9','🔄 CAD','Chauffage à distance');
+  if(f.includes('gaz'))return b('#e67e22','🔥 Gaz');
+  if(f.includes('pac'))return b('#27ae60','♻️ PAC','Pompe à chaleur');
+  if(/bois|pellet|b[uû]che|palette|granul/.test(f))return b('#27ae60','🌲 Bois');
+  if(/electr|électr|^el\b|^el\./.test(f))return b('#8e44ad','⚡ Élec.','Chauffage électrique direct');
+  if(/solaire|thermique solaire/.test(f))return b('#f1c40f','☀️ Solaire');
+  return b('#bbb','?',t)}
+
+/* ---------- OUTILS ---------- */
+function dstamp(){return new Date().toISOString().slice(0,10)}
+
+/* ---------- NOTES : export / import indépendants du fichier de données ---------- */
+function csvEsc(v){v=(v==null?'':String(v));return /[";\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(u)},2000)}
+function noteIds(){return Object.keys(siteNotes).filter(function(k){return String(siteNotes[k]||'').trim()})}
+function exportNotes(){
+  const ids=noteIds();
+  if(!ids.length){toast('⚠️ Aucune note à exporter','wr');return}
+  const d=dstamp();let c='N°;Nom du site;Note;Date\n';
+  ids.sort().forEach(function(id){const s=S.find(function(x){return x.id===id});
+    c+=[csvEsc(id),csvEsc(s?s.nom:''),csvEsc(siteNotes[id]),d].join(';')+'\n'});
+  dl(new Blob(['﻿'+c],{type:'text/csv;charset=utf-8;'}),'notes_PTE_'+d+'.csv');
+  toast('📝 '+ids.length+' notes exportées','ok');closeNotes()}
+function handleNotesImport(e){const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=function(ev){try{finishNotesImport(parseCSVtoRows(ev.target.result))}catch(er){toast('⚠️ '+er.message,'wr')}};
+  r.readAsText(f,'UTF-8');e.target.value=''}
+function finishNotesImport(rows){
+  if(!rows||rows.length<2){toast('⚠️ Fichier de notes vide ou illisible','wr');return}
+  const h=rows[0].map(function(v){return String(v||'').trim()});
+  const ci=fc(h,['N° sous site','N°','nsoussite','Identifiant','ID']);
+  const cn=fc(h,['Note','Notes','Commentaire','Commentaires','Remarques']);
+  if(ci<0||cn<0){toast('⚠️ Colonnes « N° » et « Note » introuvables','wr');return}
+  let n=0,unknown=0;
+  for(let r=1;r<rows.length;r++){
+    const id=String(rows[r][ci]||'').trim();if(!id)continue;
+    const nt=String(rows[r][cn]==null?'':rows[r][cn]);
+    if(!nt.trim())continue;
+    if(!S.some(function(s){return s.id===id}))unknown++;
+    siteNotes[id]=nt;n++}
+  saveState();ren();closeNotes();
+  toast('📝 '+n+' notes importées'+(unknown?' · ⚠ '+unknown+' N° inconnus':''),unknown?'wr':'ok')}
+function tglNotes(e){if(e)e.stopPropagation();
+  const p=$('notePop');if(!p)return;
+  const open=!p.classList.contains('on');
+  p.classList.toggle('on',open);
+  if(open){const n=noteIds().length;
+    $('notePopInfo').innerHTML=n?('<b>'+n+'</b> site'+(n>1?'s':'')+' annoté'+(n>1?'s':'')+' actuellement.'):'Aucune note enregistrée pour l’instant.'}}
+function closeNotes(){const p=$('notePop');if(p)p.classList.remove('on')}
+document.addEventListener('click',function(e){const p=$('notePop');if(p&&p.classList.contains('on')&&!p.contains(e.target))closeNotes()});
+
+/* ---------- ÉTAT DU PROJET (SIA) ---------- */
+function popEtat(){
+  const el=$('fEt');if(!el)return;
+  const set=new Set();S.forEach(function(s){if(s.etat)set.add(s.etat)});
+  const cur=el.value;
+  el.innerHTML='<option value="all">État projet : tous</option>';
+  [...set].sort().forEach(function(v){const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o)});
+  el.value=cur||'all'}
+
+
 function tglS(bid,cid){const b=$(bid),c=$(cid);b.classList.toggle('op');c.classList.toggle('op');if(b.classList.contains('op'))setTimeout(()=>{b.querySelectorAll('[id^=g]').forEach(el=>{try{if(window.Plotly)Plotly.Plots.resize(el)}catch(e){}})},400)}
 function tglM(n){$('mB'+n).classList.toggle('op');$('mCh'+n).classList.toggle('op')}
 
@@ -203,7 +532,12 @@ function extractNPA(a){if(!a)return null;const m=a.match(/\b(1[0-2]\d{2})\b/);re
 function cleanAddress(a){if(!a)return'';return a.replace(/\(.*?\)/g,'').replace(/\[.*?\]/g,'').replace(/\s+/g,' ').trim()}
 
 function sC(s){const v=(1-(s.coeff||.7))*100;const r=s.rang?Math.max(0,100-s.rang/3):50;if(s.cecb&&s.invVB&&s.invVB>0&&s.idcVB!=null&&s.idcC){const g=s.idcC-s.idcVB;if(g>0){const c=s.invVB/(g*(s.sre||1000)*30);return Math.max(0,Math.min(100,100-c*40))}}return Math.min(100,v*.3+r*.7)}
-function sO(s){let sc=0;const f=(s.ht||'').toLowerCase();if(f.includes('mazout'))sc+=70;else if(f.includes('gaz')&&!f.includes('cad')&&!f.includes('pac'))sc+=55;else if(f.includes('gaz'))sc+=30;if(s.hsub&&String(s.hsub).length>2&&!/rien|maintien/i.test(s.hsub))sc+=15;return Math.min(100,sc)}
+function sO(s){let sc=0;const f=(s.ht||'').toLowerCase();
+if(f.includes('mazout'))sc+=70;
+else if(f.includes('gaz')&&!f.includes('cad')&&!f.includes('pac'))sc+=55;
+else if(f.includes('gaz'))sc+=30;
+else if(/electr|\u00e9lectr/.test(f))sc+=45;
+if(s.hsub&&String(s.hsub).length>2&&!/rien|maintien/i.test(s.hsub))sc+=15;return Math.min(100,sc)}
 function sI(s){var cm=null;if(s.consoTherm&&s.consoTherm>0)cm=s.consoTherm/1000;else if(s.idcC&&s.sre)cm=(s.idcC*s.sre)/1000;var si=40;if(s.idcC){if(s.idcC>=220)si=100;else if(s.idcC>=180)si=80;else if(s.idcC>=125)si=55;else if(s.idcC>=83)si=30;else si=15}else if(s.clIDC){si=[0,30,55,80,100][s.clIDC]||30}if(cm!==null){var sv=0;if(cm>=5000)sv=30;else if(cm>=2000)sv=25;else if(cm>=1000)sv=20;else if(cm>=500)sv=15;else if(cm>=100)sv=10;else sv=5;return Math.min(100,Math.round(si*0.65+sv*1.15))}return si}
 function sE(s){let sc=25;if(s.elec){if(s.elec>500000)sc+=45;else if(s.elec>100000)sc+=25;else if(s.elec>30000)sc+=15}if(s.sre&&s.sre>5000)sc+=15;return Math.min(100,sc)}
 function sA(s){let sc=15;if(s.eau){if(s.eau>5000)sc+=35;else if(s.eau>1000)sc+=20}if(s.sre&&s.sre>5000)sc+=15;return Math.min(100,sc)}
@@ -233,18 +567,20 @@ function isProt(p){return p&&(p.includes('Classé')||p.includes('Zone protégée
 function isFos(t){const f=(t||'').toLowerCase();return(f.includes('gaz')||f.includes('mazout'))&&!f.startsWith('pac')&&!f.startsWith('bois')&&!f.startsWith('cad')}
 function scCol(v){return v>=70?'#27ae60':v>=50?'#e67e22':v>=30?'#e74c3c':'#95a5a6'}
 function pBg(p){return'<span class="bg bg-p'+p+'">P'+p+'</span>'}
-function patBg(p){if(!p||p==='Non protégé')return'<span class="bg bg-np">—</span>';if(p.includes('Classé'))return'<span class="bg bg-cls">🏛</span>';if(p.includes('Zone'))return'<span class="bg bg-zpro">🛡</span>';if(p.includes('Inventaire'))return'<span class="bg bg-inv">📋</span>';if(p.includes('Objets'))return'<span class="bg bg-odi">⭐</span>';if(p.includes('Ensembles'))return'<span class="bg bg-ens">🏘</span>';return'<span class="bg bg-np">'+p+'</span>'}
-function hBg(t){const f=(t||'').toLowerCase();if(f.includes('mazout'))return'<span class="bg" style="background:#c0392b">🔥 Mazout</span>';if(f.includes('gaz')&&!f.includes('cad'))return'<span class="bg" style="background:#e67e22">🔥 Gaz</span>';if(f.includes('pac'))return'<span class="bg" style="background:#27ae60">♻️ PAC</span>';if(f.includes('bois')||f.includes('pellet'))return'<span class="bg" style="background:#27ae60">🌲 Bois</span>';if(f.includes('cad')||f.includes('cadiom'))return'<span class="bg" style="background:#2980b9">🔄 CAD</span>';return'<span class="bg" style="background:#bbb">?</span>'}
 function fmtSRE(v){if(!v)return'—';return v.toLocaleString('fr-CH')}
 function fmtInv(v){if(!v||v<=0)return'—';if(v>=1e6)return(v/1e6).toFixed(1)+'M';return(v/1e3).toFixed(0)+'k'}
 function fmtIDCproj(v){if(!v&&v!==0)return'<span style="color:#aaa">—</span>';return'<span style="color:#27ae60;font-weight:600">'+v+'</span>'}
 
 function compl(s){let t=9,f=0;if(s.sre)f++;if(s.idcC)f++;if(s.ht&&s.ht.length>1)f++;if(s.coeff!=null)f++;if(s.invVB&&s.invVB>0)f++;if(s.hsub&&s.hsub.length>2&&!/rien|maintien/i.test(s.hsub))f++;if(s.pat&&s.pat.length>1)f++;if(s.elec)f++;if(s.eau)f++;return Math.round(f/t*100)}
-function complBg(s){const p=compl(s);const e=p>=80?'🟢':p>=50?'🟡':'🔴';return'<span title="'+p+'% complet" style="cursor:help">'+e+'</span>'}
-
+function complBg(s){const p=compl(s);const c=p>=80?'#27ae60':p>=50?'#e67e22':'#e74c3c';return'<span title="'+p+'% des 9 champs clés renseignés" style="font-size:.7rem;font-weight:700;color:'+c+';cursor:help">'+p+'%</span>'}
 function patMalus(pat){if(!pat)return 0;if(pat.includes('Classé'))return -50;if(pat.includes('Zone protégée')||pat.includes('Zone prot'))return -40;if(pat.includes('Inventaire'))return -30;if(pat.includes('Ensembles'))return -20;if(pat.includes('Objets')||pat.includes("intérêt"))return -10;return 0}
-function feasib(s){let f=0;if(s.cecb)f+=33;if(s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub))f+=33;if(s.invVB&&s.invVB>0)f+=34;f+=patMalus(s.pat);return Math.max(0,Math.min(100,f))}
-function feasibBreak(s){let f=0,parts=[];if(s.cecb){f+=33;parts.push('CECB +33')}else parts.push('CECB 0');const hasSub=s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub);if(hasSub){f+=33;parts.push('Subst +33')}else parts.push('Subst 0');if(s.invVB&&s.invVB>0){f+=34;parts.push('Budget +34')}else parts.push('Budget 0');const pm=patMalus(s.pat);if(pm<0)parts.push('Patrimoine '+pm);f=Math.max(0,Math.min(100,f+pm));return{score:f,detail:parts.join(' · ')}}
+function feasib(s){let f=cecbInfo(s).pts;if(s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub))f+=33;if(s.invVB&&s.invVB>0)f+=34;f+=patMalus(s.pat);return Math.max(0,Math.min(100,f))}
+function feasibBreak(s){const d=cecbInfo(s);let f=d.pts,parts=['CECB '+cecbBg(s)+' <b>+'+d.pts+'</b>'];
+const hasSub=s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub);
+if(hasSub){f+=33;parts.push('Subst +33')}else parts.push('Subst 0');
+if(s.invVB&&s.invVB>0){f+=34;parts.push('Budget +34')}else parts.push('Budget 0');
+const pm=patMalus(s.pat);if(pm<0)parts.push('Patrimoine '+pm);
+f=Math.max(0,Math.min(100,f+pm));return{score:f,detail:parts.join(' \u00b7 ')}}
 
 function popRP(){const s=new Set();S.forEach(si=>{if(si.rp)s.add(si.rp)});const sorted=[...s].sort();const el=$('gRP');const cur=el.value;el.innerHTML='<option value="all">Tous les RP</option>';sorted.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;el.appendChild(o)});el.value=cur||'all'}
 
@@ -263,12 +599,6 @@ const phColors={1:'#e74c3c',2:'#e67e22',3:'#3498db',4:'#95a5a6'};
 const phPos=[{l:0,w:16.67},{l:16.67,w:25},{l:41.67,w:25},{l:66.67,w:33.33}];
 
 function assignFallbackCoords(){S.forEach(s=>{if(s.lat&&s.lng&&!s.geoFallback){if(s.geoQ!=='nominatim')s.geoQ='file';return}const npa=extractNPA(s.adr);if(npa&&GE_NPA[npa]){const[lat,lng]=GE_NPA[npa];s.lat=lat+(Math.random()-.5)*.004;s.lng=lng+(Math.random()-.5)*.004;s.geoQ='npa';s.geoFallback=true}else{s.lat=null;s.lng=null;s.geoQ='none';s.geoFallback=true}})}
-
-function exportGeoCSV(){
-  const sc=scored();let c='N°;Nom;Adresse;RP;Responsable projet;Patrimoine;Score;Type_intervention;Phase;Coeff;SRE;IDC;IDC projeté;Chauffage;Substitution;CECB;Invest ImmOBA;Complétude;Faisabilité;Notes;Latitude;Longitude;Geo_Source\n';
-  sc.forEach(s=>{const lat=(s.lat&&s.geoQ!=='npa')?s.lat.toFixed(6):'';const lng=(s.lng&&s.geoQ!=='npa')?s.lng.toFixed(6):'';const src=s.geoQ==='file'?'fichier':s.geoQ==='nominatim'?'nominatim':'';const note=(siteNotes[s.id]||'').replace(/;/g,',').replace(/\n/g,' ');
-  c+=s.id+';'+s.nom+';'+(s.adr||'')+';'+(s.rp||'')+';'+(s.drt||'')+';'+(s.pat||'')+';'+s.sc.t+';'+s.sc.ti+';'+s.sc.ph+';'+(s.coeff||'')+';'+(s.sre||'')+';'+(s.idcC||'')+';'+(s.idcVB||'')+';'+(s.ht||'')+';'+(s.hsub||'')+';'+(s.cecb?'Oui':'Non')+';'+(s.invVB||'')+';'+compl(s)+'%;'+feasib(s)+';'+note+';'+lat+';'+lng+';'+src+'\n'});
-  const b=new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='priorisation_PTE_geocode.csv';a.click();toast('📥 Export terminé','ok')}
 
 /* ================================================================
    ★ MATCHING DE COLONNES PAR PALIERS (fix collision « RP »)
@@ -298,11 +628,11 @@ function colMostlyNumeric(rows,idx){
 function gv(row,idx){if(idx<0||!row||idx>=row.length)return'';const v=row[idx];return(v===null||v===undefined||v==='')?'':String(v)}
 function gvr(row,idx){if(idx<0||!row||idx>=row.length)return null;const v=row[idx];return(v===null||v===undefined||v==='')?null:v}
 function parseCSVtoRows(t){const fl=t.split('\n')[0]||'';const sep=(fl.split(';').length>=fl.split(',').length)?';':',';const rows=[];let row=[];let cur='';let inQ=false;for(let i=0;i<t.length;i++){const ch=t[i];if(ch==='"'){if(inQ&&t[i+1]==='"'){cur+='"';i++}else inQ=!inQ}else if(ch===sep&&!inQ){row.push(cur.trim());cur=''}else if(ch==='\n'&&!inQ){row.push(cur.trim());if(row.length>3)rows.push(row);row=[];cur=''}else if(ch==='\r'){}else cur+=ch}if(row.length>3){row.push(cur.trim());rows.push(row)}return rows}
-function xlsxToRows(buf){const d=new Uint8Array(buf);const wb=XLSX.read(d,{type:'array'});let bs=wb.SheetNames[0],bc=0;for(const n of wb.SheetNames){const s=wb.Sheets[n];if(!s['!ref'])continue;const r=XLSX.utils.decode_range(s['!ref']);const c=r.e.c-r.s.c+1;if(c>bc){bc=c;bs=n}}return XLSX.utils.sheet_to_json(wb.Sheets[bs],{header:1,defval:'',raw:true,blankrows:false})}
+
 
 function importFromRows(rows){
   if(rows.length<2)return[];const h=rows[0].map(v=>String(v||'').trim());
-  const c={id:fc(h,['N° sous site','nsoussite','N°soussite','N°']),nom:fc(h,['Nom du site_AB','Nomdusite','Nom du site']),adr:fc(h,['Adresse','Adresse du site','Lieu']),rang:fc(h,['Rang actuel','Rang']),coeff:fc(h,['Coeff Stratus','CoeffStratus']),sre:fc(h,['SRE corrigée','SREcorrigée','SRE']),idcC:fc(h,['IDC corrigé','IDCcorrigé','IDC corrige']),agent:fc(h,['Agent']),pat:fc(h,['Classement au Patrimoine','Patrimoine']),elec:fc(h,['Conso Elec','ConsoElec']),eau:fc(h,['Conso Eau','ConsoEau']),consoTherm:fc(h,['Conso Therm','ConsoTherm']),co2:fc(h,['Co2 2025','Co2 2024','kgCo2','Co2']),clIDC:fc(h,['Classe IDC','ClasseIDC']),clVet:fc(h,['Classe Vétusté','ClasseVetuste']),fp:fc(h,['Facteur protection','Facteurprotection']),ti:fc(h,["Type d'intervention","TypeIntervention","Type_intervention","Typeintervention","Type intervention"]),rp:fc(h,['Responsables Portefeuille','Responsable Portefeuille','ResponsablesPortefeuille','Resp Portefeuille','Portefeuille','RP']),drt:fc(h,['Responsable DRT/DCO','Responsable DRT DCO','ResponsableDRTDCO','Responsable projet','Resp projet','DRT']),cecb:fc(h,['Audit CECB','AuditCECB']),ht:fc(h,['Chauffage Type Energie','ChauffageTypeEnergie','Chauffage Type']),hsub:fc(h,['Chauffage de subsitution','Chauffage de substitution','substitution']),idcVB:fc(h,['IDC projeté','IDCprojeté']),invVB:fc(h,['Invest ImmOBA','InvestImmOBA','Invest VB','Invest']),lat:fc(h,['Latitude','Lat','GPS_Lat','YCOOR']),lng:fc(h,['Longitude','Long','Lng','GPS_Lng','XCOOR','lon']),notes:fc(h,['Notes','Commentaires','Remarques'])};
+  const c={id:fc(h,['N° sous site','nsoussite','N°soussite','N°']),nom:fc(h,['Nom du site_AB','Nomdusite','Nom du site']),adr:fc(h,['Adresse','Adresse du site','Lieu']),rang:fc(h,['Rang actuel','Rang']),coeff:fc(h,['Coeff Stratus','CoeffStratus']),sre:fc(h,['SRE corrigée','SREcorrigée','SRE']),idcC:fc(h,['IDC corrigé','IDCcorrigé','IDC corrige']),agent:fc(h,['Agent']),pat:fc(h,['Classement au Patrimoine','Patrimoine']),elec:fc(h,['Conso Elec','ConsoElec']),eau:fc(h,['Conso Eau','ConsoEau']),consoTherm:fc(h,['Conso Therm','ConsoTherm']),co2:fc(h,['Co2 2025','Co2 2024','kgCo2','Co2']),clIDC:fc(h,['Classe IDC','ClasseIDC']),clVet:fc(h,['Classe Vétusté','ClasseVetuste']),fp:fc(h,['Facteur protection','Facteurprotection']),ti:fc(h,["Type d'intervention","TypeIntervention","Type_intervention","Typeintervention","Type intervention"]),rp:fc(h,['Responsables Portefeuille','Responsable Portefeuille','ResponsablesPortefeuille','Resp Portefeuille','Portefeuille','RP']),drt:fc(h,['Responsable DRT/DCO','Responsable DRT DCO','ResponsableDRTDCO','Responsable projet','Resp projet','DRT']),cecb:fc(h,['Audit CECB','AuditCECB']),ht:fc(h,['Chauffage Type Energie','ChauffageTypeEnergie','Chauffage Type']),hsub:fc(h,['Chauffage de subsitution','Chauffage de substitution','substitution']),idcVB:fc(h,['IDC projeté','IDCprojeté']),invVB:fc(h,['Invest ImmOBA','InvestImmOBA','Invest VB','Invest']),lat:fc(h,['Latitude','Lat','GPS_Lat','YCOOR']),lng:fc(h,['Longitude','Long','Lng','GPS_Lng','XCOOR','lon']),notes:fc(h,['Notes','Commentaires','Remarques']),etat:fc(h,['Etat du projet (SIA)','État du projet (SIA)','Etat du projet','État du projet','Etat projet','EtatSIA'])};
   /* Garde-fou anti-collision : si la colonne « RP » détectée contient des nombres
      (ex. Facteur protection 0.5/1), on la rejette et on cherche une colonne
      dont l'en-tête contient « portefeuille ». */
@@ -319,10 +649,10 @@ function importFromRows(rows){
   /* Filtrage des sites inactifs : uniquement si la colonne RP est fiable */
   if(c.rp>=0&&(!rpV||rpV.toLowerCase().includes('hors périmètre')))continue;
   const id=gv(R,c.id);if(!id||id.length<2)continue;
-  const coeff=pc(gvr(R,c.coeff));const cecbStr=gv(R,c.cecb);const hasCECB=cecbStr&&(/var_|en cours|demandé|prio\s*\d/i.test(cecbStr));const htVal=gv(R,c.ht)||gv(R,c.agent)||'';
+  const coeff=pc(gvr(R,c.coeff));const cecbRaw=(gv(R,c.cecb)||'').trim();const cecbSt=cecbStatus(cecbRaw);const htVal=gv(R,c.ht)||gv(R,c.agent)||'';
   let fLat=null,fLng=null,fQ='none';if(hasGPS){const rLat=pn(gvr(R,c.lat)),rLng=pn(gvr(R,c.lng));if(rLat&&rLng&&Math.abs(rLat)>1&&Math.abs(rLng)>0.01){fLat=rLat;fLng=rLng;fQ='file';fgc++}}
   if(c.notes>=0){const n=gv(R,c.notes);if(n)siteNotes[id]=n}
-  sites.push({id,nom:(gv(R,c.nom)||'').replace(/\s*-\s*\(.*/,'').substring(0,55),adr:gv(R,adrCol),rp:rpV.trim(),drt:(gv(R,c.drt)||'').trim(),rang:pn(gvr(R,c.rang)),coeff,sre:pn(gvr(R,c.sre)),idcC:pn(gvr(R,c.idcC)),pat:gv(R,c.pat)||'',fp:pn(gvr(R,c.fp)),ti:pn(gvr(R,c.ti)),clIDC:pn(gvr(R,c.clIDC)),clVet:pn(gvr(R,c.clVet)),elec:pn(gvr(R,c.elec)),eau:pn(gvr(R,c.eau)),consoTherm:pn(gvr(R,c.consoTherm)),co2:pn(gvr(R,c.co2)),ht:htVal,hsub:gv(R,c.hsub),cecb:hasCECB,idcVB:pn(gvr(R,c.idcVB)),invVB:pn(gvr(R,c.invVB)),lat:fLat,lng:fLng,geoQ:fQ,geoFallback:fQ==='none'})}
+  sites.push({id,nom:(gv(R,c.nom)||'').replace(/\s*-\s*\(.*/,'').substring(0,55),adr:gv(R,adrCol),rp:rpV.trim(),drt:(gv(R,c.drt)||'').trim(),rang:pn(gvr(R,c.rang)),coeff,sre:pn(gvr(R,c.sre)),idcC:pn(gvr(R,c.idcC)),pat:gv(R,c.pat)||'',fp:pn(gvr(R,c.fp)),ti:pn(gvr(R,c.ti)),clIDC:pn(gvr(R,c.clIDC)),clVet:pn(gvr(R,c.clVet)),elec:pn(gvr(R,c.elec)),eau:pn(gvr(R,c.eau)),consoTherm:pn(gvr(R,c.consoTherm)),co2:pn(gvr(R,c.co2)),ht:htVal,hsub:gv(R,c.hsub),cecbRaw:cecbRaw,cecbSt:cecbSt,cecb:CECB_DEF[cecbSt].pts===33,etat:(gv(R,c.etat)||'').trim(),idcVB:pn(gvr(R,c.idcVB)),invVB:pn(gvr(R,c.invVB)),lat:fLat,lng:fLng,geoQ:fQ,geoFallback:fQ==='none'})}
   return sites}
 
 
@@ -369,24 +699,33 @@ function loadSample(){S=[
 {id:"693527",nom:"UNI Réaction Exo-gaspillique",adr:"Corniche Deira Promenade 30, Waterfront",lat:25.2900,lng:55.3150,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:21,coeff:.46,sre:5725,idcC:99,ht:"CAD réparti",fp:1,pat:"",elec:2292831,co2:594041,clIDC:2,clVet:4,cecb:false,invVB:2455000},
 {id:"836241",nom:"UNI Champ de Bataille Énergie",adr:"Dragon Mart Blvd 20, International City",lat:25.1720,lng:55.4050,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:42,coeff:.58,sre:5966,idcC:78,ht:"Gaz",hsub:"CAD_Lignon",fp:.5,pat:"Objets d'intérêt",elec:1382851,co2:604589,clIDC:1,clVet:4,cecb:true,invVB:8763000,idcVB:41.1},
 {id:"507362",nom:"Complexe Massivement Sous-Isolé",adr:"DIFC Gate Avenue 4, Financial Centre",lat:25.2130,lng:55.2780,geoQ:'file',geoFallback:false,rp:"Poète du Bâti en Équilibre",drt:"",rang:297,coeff:.65,sre:60216,idcC:116,ht:"Chauffage à distance",fp:1,pat:"",elec:11361986,co2:990692,clIDC:2,clVet:3,cecb:false,invVB:257795000}
-];dataVersion++;detectGeoContext();assignFallbackCoords();popRP();popRPProject();syncAllW();ren();updateSourceInfo(S.length,'Échantillon intégré','sample')}
+];normSites();S.forEach(function(s,i){if(s.etat===undefined)s.etat=['SIA 2.21','SIA 3.31','SIA 3.32','voir remarques','','Demande Trx'][i%6]});dataVersion++;detectGeoContext();popEtat();assignFallbackCoords();popRP();popRPProject();syncAllW();ren();updateSourceInfo(S.length,'Échantillon intégré','sample')}
 
 
 /* ---------- IMPORT / EXPORT / DÉMARRAGE ---------- */
 function handleFileImport(e){const f=e.target.files[0];if(!f)return;lastFileHandle=f;lastFileName=f.name;processFile(f)}
 function processFile(f){
   const ext=f.name.split('.').pop().toLowerCase();const reader=new FileReader();
-  if(ext==='xlsx'||ext==='xls'){reader.onload=ev=>{try{finishImport(xlsxToRows(ev.target.result),f.name)}catch(er){toast('⚠️ '+er.message,'wr')}};reader.readAsArrayBuffer(f)}
-  else{reader.onload=ev=>{try{finishImport(parseCSVtoRows(ev.target.result),f.name)}catch(er){toast('⚠️ '+er.message,'wr')}};reader.readAsText(f,'UTF-8')}}
+  reader.onerror=function(){toast('⚠️ Fichier illisible','wr')};
+  if(ext==='xlsx'||ext==='xlsm'){
+    reader.onload=ev=>{try{finishImport(xlsxToRows(ev.target.result),f.name)}
+      catch(er){toast('⚠️ Lecture Excel impossible : '+er.message,'wr')}};
+    reader.readAsArrayBuffer(f)}
+  else if(ext==='xls'){toast('⚠️ Ancien format .xls non pris en charge — enregistrez en .xlsx','wr')}
+  else{reader.onload=ev=>{try{finishImport(parseCSVtoRows(ev.target.result),f.name)}
+    catch(er){toast('⚠️ '+er.message,'wr')}};reader.readAsText(f,'UTF-8')}}
 function finishImport(rows,source){
   const si=importFromRows(rows);
   if(!si||!si.length){toast('⚠️ Aucun site importé — vérifiez les en-têtes (RP, N°…)','wr');return}
-  S=si;dataVersion++;phaseOverrides={};siteNotes={};
+  /* Les notes et les phases ajustées manuellement sont conservées : le fichier
+     de données est mis à jour régulièrement depuis d'autres sources, alors que
+     ces deux éléments sont des saisies de l'utilisateur, indexées par N° de sous-site. */
+  S=si;dataVersion++;normSites();
   if(typeof cmpSites!=='undefined'){cmpSites=[];if(typeof renderCompare==='function')renderCompare()}
   detectGeoContext();assignFallbackCoords();
   saveData();saveState();
   if(typeof lMap!=='undefined'&&lMap)lMap.setView([geoCtx.lat,geoCtx.lng],12);
-  popRP();popRPProject();syncAllW();ren();
+  popRP();popRPProject();popEtat();syncAllW();ren();
   const fg=S.filter(s=>s.geoQ==='file').length;
   updateSourceInfo(si.length,source,'file');
   const br=$('btnRefresh');if(br)br.style.display='inline-block';
@@ -398,26 +737,43 @@ function updateSourceInfo(count,source,type){
   const b=$('srcBadge');if(!b)return;
   if(type==='file'){b.className='src-indicator src-file';b.textContent='📄 '+count+' sites — '+(lastFileName||source)}
   else{b.className='src-indicator src-none';b.textContent='⚠ Données échantillon'}
-  b.title=HAS_LS?'Les données sont partagées entre les 3 pages de l’outil.':'Mémoire locale indisponible : chaque page doit être alimentée séparément.'}
+  b.title='Les données sont partagées entre les 3 pages de l’outil'+(HAS_LS?'.':' tant que vous restez dans le même onglet (Safari en fichier local).')}
 
 /* Synchronisation entre onglets/pages ouverts simultanément */
 window.addEventListener('storage',function(e){
   if(_lsWriting)return;
-  if(e.key===LS_DATA){if(loadData()){dataVersion++;detectGeoContext();assignFallbackCoords();popRP();popRPProject();ren();updateSourceInfo(S.length,lastFileName,'file');toast('🔄 Données mises à jour depuis une autre page','nf')}}
+  if(e.key===LS_DATA){if(loadData()){dataVersion++;normSites();detectGeoContext();assignFallbackCoords();popRP();popRPProject();popEtat();ren();updateSourceInfo(S.length,lastFileName,'file');toast('🔄 Données mises à jour depuis une autre page','nf')}}
   else if(e.key===LS_STATE){loadState();syncAllW();ren()}});
+
+/* Diagnostic visible : les deux librairies encore chargées depuis Internet
+   (graphiques et fond de carte) peuvent être bloquées par un réseau
+   d'entreprise. L'import et le classement, eux, ne dépendent de rien. */
+function checkLibs(){
+  const miss=[];
+  if($('gTop')&&typeof Plotly==='undefined')miss.push('les graphiques (Plotly)');
+  if($('leafMap')&&typeof L==='undefined')miss.push('le fond de carte (Leaflet)');
+  if(!miss.length)return;
+  const d=document.createElement('div');
+  d.className='libwarn';
+  d.innerHTML='⚠️ <b>Ressource externe non chargée :</b> '+miss.join(' et ')+
+    '. L’import du fichier, le classement et le phasage fonctionnent normalement — seul l’affichage concerné est indisponible. '+
+    'Cause habituelle : pas d’accès Internet, ou domaine bloqué par le réseau de l’entreprise.';
+  const h=document.querySelector('.hdr');
+  if(h&&h.parentNode)h.parentNode.insertBefore(d,h.nextSibling);else document.body.appendChild(d)}
 
 function boot(){
   const st=loadState();
   const hasData=loadData();
   if(hasData){
-    dataVersion++;detectGeoContext();assignFallbackCoords();
-    popRP();popRPProject();
+    dataVersion++;normSites();detectGeoContext();assignFallbackCoords();
+    popRP();popRPProject();popEtat();
     if(st&&st.rp&&$('gRP')){const o=[...$('gRP').options].find(x=>x.value===st.rp);if(o)$('gRP').value=st.rp}
     syncAllW();updateSourceInfo(S.length,lastFileName,'file');ren();
   }else{
     loadSample();
   }
-  if(!HAS_LS)setTimeout(()=>toast('ℹ️ Mémoire locale indisponible : import à refaire sur chaque page','wr'),800);
+  checkLibs();
+  if(!HAS_LS)setTimeout(()=>toast('ℹ️ Partage entre pages limité à cet onglet (mémoire locale refusée)','wr'),800);
   const h=(location.hash||'').replace('#','');
   if(h&&$(h)&&$(h).classList.contains('pnl')){const btn=document.querySelector('.tab[data-panel="'+h+'"]');if(btn)sw(h,btn)}
   if(typeof pageInit==='function')pageInit();
@@ -533,6 +889,8 @@ function getFilteredForMap(){
   let f=scored(rp,pa);if(ph!=='all')f=f.filter(s=>s.sc.ph===+ph);
   if(fo==='fos')f=f.filter(s=>isFos(s.ht));if(fo==='ren')f=f.filter(s=>{const t=(s.ht||'').toLowerCase();return t.includes('pac')||t.includes('bois')||t.includes('cad')});
   if(rpj!=='all')f=f.filter(s=>(s.drt||'')===rpj);
+  const ce=$('fCe')?.value||'all';if(ce!=='all')f=f.filter(s=>cecbInfo(s).fam===ce);
+  const et=$('fEt')?.value||'all';if(et!=='all')f=f.filter(s=>(s.etat||'')===et);
   if(se)f=f.filter(s=>(s.id+s.nom+(s.rp||'')+(s.drt||'')+(s.hsub||'')+(s.pat||'')+(s.adr||'')).toLowerCase().includes(se));return f}
 
 function renM(){
