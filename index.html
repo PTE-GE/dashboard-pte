@@ -162,8 +162,8 @@ a.tab{text-decoration:none;display:inline-flex;align-items:center;line-height:1}
 <div class="cd kpi"><div class="n" id="k6">-</div><div class="l">💰 Invest (M)</div></div>
 </div>
 <div class="cd">
-<div class="wt" onclick="tglW()"><h3 style="margin:0;border:none;padding:0">⚖️ Pondérations</h3><span class="ch" id="wCh">▼</span></div>
-<div class="wb" id="wB"><div style="padding-top:8px">
+<div class="wt" onclick="tglW()"><h3 style="margin:0;border:none;padding:0">⚖️ Pondérations</h3><span class="ch op" id="wCh">▼</span></div>
+<div class="wb op" id="wB"><div style="padding-top:8px">
 <div class="sg"><label>💰 CEE (coût/m²)</label><input type="range" id="w1" min="0" max="100" value="30" oninput="uW('d')"><span class="v" id="v1">30</span></div>
 <div class="sg"><label>🌍 CO₂ / Fossile</label><input type="range" id="w2" min="0" max="100" value="25" oninput="uW('d')"><span class="v" id="v2">25</span></div>
 <div class="sg"><label>🔥 IDC / Therm.</label><input type="range" id="w3" min="0" max="100" value="20" oninput="uW('d')"><span class="v" id="v3">20</span></div>
@@ -224,8 +224,8 @@ a.tab{text-decoration:none;display:inline-flex;align-items:center;line-height:1}
 <!-- ===== CLASSEMENT ===== -->
 <div id="rank" class="pnl">
 <div class="cd">
-<div class="wt" onclick="tglS('rwB','rwCh')"><h3 style="margin:0;border:none;padding:0">⚖️ Pondérations</h3><span class="ch" id="rwCh">▼</span></div>
-<div class="wb" id="rwB"><div style="padding-top:8px">
+<div class="wt" onclick="tglS('rwB','rwCh')"><h3 style="margin:0;border:none;padding:0">⚖️ Pondérations</h3><span class="ch op" id="rwCh">▼</span></div>
+<div class="wb op" id="rwB"><div style="padding-top:8px">
 <div class="sg"><label>💰 CEE (coût/m²)</label><input type="range" id="rw1" min="0" max="100" value="30" oninput="uW('r')"><span class="v" id="rv1">30</span></div>
 <div class="sg"><label>🌍 CO₂ / Fossile</label><input type="range" id="rw2" min="0" max="100" value="25" oninput="uW('r')"><span class="v" id="rv2">25</span></div>
 <div class="sg"><label>🔥 IDC / Therm.</label><input type="range" id="rw3" min="0" max="100" value="20" oninput="uW('r')"><span class="v" id="rv3">20</span></div>
@@ -249,7 +249,7 @@ a.tab{text-decoration:none;display:inline-flex;align-items:center;line-height:1}
 </div>
 <div style="overflow:auto;max-height:72vh">
 <table><thead><tr><th title="Rang dans la sélection affichée, suivi entre parenthèses du rang dans le classement global">#</th><th>N°</th><th>Site</th><th>Rp</th><th>Pat.</th><th>Score</th><th title="Type d'intervention (IDC × Stratus)
-T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</th><th>Ph</th><th>Vét.</th><th>SRE</th><th>IDC</th><th>IDC proj.</th><th>Chauffage</th><th>Subst.</th><th>CECB+</th><th>Invest</th><th title="Complétude données">📊</th></tr></thead><tbody id="rB"></tbody></table>
+T1=Suivi · T2=Entretien · T3=Gros travaux · T4=Rénovation complète">Int.</th><th>Ph</th><th>Vét.</th><th>SRE</th><th>IDC</th><th>IDC proj.</th><th>Chauffage</th><th>Subst.</th><th>CECB+</th><th>Invest</th><th title="Complétude des données — moyenne pondérée Indicateurs 50 % / Faisabilité 40 % / Pilotage 10 %,&#10;assortie d’un indice de fiabilité du classement : 🟢 A fiable · 🔵 B exploitable · 🟠 C indicatif · 🔴 D non classable.&#10;Survolez une valeur pour la liste nominative des champs manquants.">📊</th></tr></thead><tbody id="rB"></tbody></table>
 </div>
 </div>
 <div class="cd">
@@ -828,8 +828,121 @@ function fmtSRE(v){if(!v)return'—';return v.toLocaleString('fr-CH')}
 function fmtInv(v){if(!v||v<=0)return'—';if(v>=1e6)return(v/1e6).toFixed(1)+'M';return(v/1e3).toFixed(0)+'k'}
 function fmtIDCproj(v){if(!v&&v!==0)return'<span style="color:#aaa">—</span>';return'<span style="color:#27ae60;font-weight:600">'+v+'</span>'}
 
-function compl(s){let t=9,f=0;if(s.sre)f++;if(s.idcC)f++;if(s.ht&&s.ht.length>1)f++;if(s.coeff!=null)f++;if(s.invVB&&s.invVB>0)f++;if(s.hsub&&s.hsub.length>2&&!/rien|maintien/i.test(s.hsub))f++;if(s.pat&&s.pat.length>1)f++;if(s.elec)f++;if(s.eau)f++;return Math.round(f/t*100)}
-function complBg(s){const p=compl(s);const c=p>=80?'#27ae60':p>=50?'#e67e22':'#e74c3c';return'<span title="'+p+'% des 9 champs clés renseignés" style="font-size:.7rem;font-weight:700;color:'+c+';cursor:help">'+p+'%</span>'}
+/* ================================================================
+   COMPLÉTUDE DES DONNÉES — v2 (3 blocs pondérés + indice de fiabilité)
+   ----------------------------------------------------------------
+   Remplace l'ancien calcul « 9 champs binaires à poids égal », qui
+   ignorait le CECB+, l'IDC projeté et toutes les données de pilotage
+   (un site pouvait afficher 100 % sans audit ni IDC projeté).
+
+   Bloc A « Indicateurs »  — 50 % — alimente les 6 sous-scores
+   Bloc B « Faisabilité »  — 40 % — permet de décider, phaser, prioriser
+   Bloc C « Pilotage »     — 10 % — permet de mener le projet
+
+   Trois mécanismes correctifs :
+   1. Crédit gradué      : un champ vaut 0 / 0,25 / 0,5 / 1 (pas 0 ou 1)
+   2. Conditionnalité    : un champ non applicable (na) sort du dénominateur
+                           → on ne pénalise jamais deux fois la même lacune
+   3. Plausibilité       : une valeur présente mais hors bornes = demi-crédit
+
+   Indice de fiabilité (bloquants = champs sans lesquels le rang est faux) :
+     A Fiable · B Exploitable · C Indicatif · D Non classable
+   ================================================================ */
+const CPL_W={A:50,B:40,C:10};
+const CPL_BLK_LBL={A:'🎯 Indicateurs',B:'🛠️ Faisabilité',C:'📁 Pilotage'};
+const CPL_GRADE={
+  A:{c:'#27ae60',i:'🟢',n:'Fiable'},
+  B:{c:'#2980b9',i:'🔵',n:'Exploitable'},
+  C:{c:'#e67e22',i:'🟠',n:'Indicatif'},
+  D:{c:'#e74c3c',i:'🔴',n:'Non classable'}};
+function _cplHas(v){return v!==null&&v!==undefined&&String(v).trim()!==''}
+function _cplEsc(t){return String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* Liste des champs évalués, avec bloc (b), poids interne (w),
+   caractère bloquant (bq), crédit (c), applicabilité (na) et motif (why). */
+function cplFields(s){
+  s=s||{};
+  const cs=s.cecbSt||'none';
+  const cecbC={varA:1,varB:1,varC:1,pending:.5,check:.25,none:0}[cs];
+  const cecbDone=(cs==='varA'||cs==='varB'||cs==='varC');
+  const htTxt=String(s.ht||'').trim();
+  const htNone=/inexistant|aucun|sans chauff/i.test(htTxt);
+  const subOK=!!(s.hsub&&String(s.hsub).trim().length>2&&!/rien|maintien/i.test(s.hsub));
+  return[
+  /* ---- Bloc A : indicateurs — sans eux, aucun classement n'est fiable ---- */
+  {b:'A',lbl:'📐 SRE corrigée',        w:3,bq:1,c:!s.sre?0:((s.sre<50||s.sre>300000)?.5:1),          why:'surface hors plage plausible (50 – 300 000 m²)'},
+  {b:'A',lbl:'🔥 IDC corrigé',         w:3,bq:1,c:!s.idcC?0:((s.idcC<20||s.idcC>500)?.5:1),          why:'IDC hors plage plausible (20 – 500 MJ/m²)'},
+  {b:'A',lbl:'♨️ Type d’énergie',      w:3,bq:1,c:(htTxt.length<2||htTxt==='?')?0:1},
+  {b:'A',lbl:'🏚️ Coeff Stratus',       w:2,bq:1,c:s.coeff==null?0:((s.coeff<0||s.coeff>1)?.5:1),     why:'coefficient hors plage 0 – 1'},
+  {b:'A',lbl:'⚡ Conso électricité',   w:1,bq:0,c:s.elec?1:0},
+  {b:'A',lbl:'💧 Conso eau',           w:1,bq:0,c:s.eau?1:0},
+  {b:'A',lbl:'🌍 Conso therm. / CO₂',  w:1,bq:0,c:(s.consoTherm||s.co2)?1:0},
+  /* ---- Bloc B : faisabilité, décision et priorisation ---- */
+  {b:'B',lbl:'📋 Audit CECB+',         w:3,bq:1,c:cecbC,
+     why:cs==='pending'?'audit en cours — crédit partiel':cs==='check'?'statut douteux, à confirmer':''},
+  {b:'B',lbl:'🎯 IDC projeté',         w:2,bq:0,na:!cecbDone,
+     c:(s.idcVB==null)?0:((s.idcC&&s.idcVB>=s.idcC)?.5:1),
+     why:'IDC projeté ≥ IDC actuel — incohérent',
+     naWhy:'exigé seulement si l’audit CECB+ est réalisé'},
+  {b:'B',lbl:'🔄 Chauffage substitution',w:3,bq:1,c:!subOK?0:(htNone?.5:1), why:'substitution définie sur un bâtiment sans chauffage'},
+  {b:'B',lbl:'💰 Investissement ImmOBA',w:3,bq:1,c:(s.invVB==null)?0:((s.invVB>2e8)?.5:1),           why:'montant supérieur à 200 M — à vérifier'},
+  {b:'B',lbl:'🏛️ Classement patrimoine',w:2,bq:1,c:(s.pat&&String(s.pat).trim().length>1)?1:0},
+  /* ---- Bloc C : pilotage du projet ---- */
+  {b:'C',lbl:'👤 Resp. portefeuille',  w:2,bq:0,c:_cplHas(s.rp)?1:0},
+  {b:'C',lbl:'👤 Resp. DRT / DCO',     w:2,bq:0,c:_cplHas(s.drt)?1:0},
+  {b:'C',lbl:'📅 État du projet (SIA)',w:2,bq:0,c:_cplHas(s.etat)?1:0},
+  {b:'C',lbl:'🔧 Type d’intervention', w:1,bq:0,c:(s.ti!=null)?1:0},
+  {b:'C',lbl:'📍 Adresse + GPS',       w:1,bq:0,c:!_cplHas(s.adr)?0:((s.lat&&s.lng&&!s.geoFallback)?1:.5), why:'coordonnées estimées (NPA) et non relevées'}
+  ]}
+
+/* Agrégation : % pondéré + % par bloc + indice de fiabilité + listes d'écarts */
+function cplDetail(s){
+  const ALL=cplFields(s);
+  const F=ALL.filter(function(f){return !f.na});
+  const blk={};let num=0,den=0;
+  ['A','B','C'].forEach(function(k){
+    const g=F.filter(function(f){return f.b===k});
+    const tw=g.reduce(function(a,f){return a+f.w},0);
+    if(!tw){blk[k]=null;return}
+    const p=g.reduce(function(a,f){return a+f.c*f.w},0)/tw;
+    blk[k]=Math.round(p*100);num+=CPL_W[k]*p;den+=CPL_W[k]});
+  const pct=den?Math.round(num/den*100):0;
+  /* Un champ bloquant est « non satisfait » s'il est absent (0), douteux (0,25)
+     ou implausible / partiel (0,5) : dans les trois cas le rang n'est pas sûr. */
+  const nA=F.filter(function(f){return f.b==='A'&&f.bq&&f.c<.75}).length;
+  const nB=F.filter(function(f){return f.b==='B'&&f.bq&&f.c<.75}).length;
+  let g,gl;
+  if(nA>=2){g='D';gl='Non classable — '+nA+' données socle manquantes ou implausibles : le rang de ce site n’est pas exploitable'}
+  else if(nA===1){g='C';gl='Indicatif — 1 donnée socle manquante ou implausible : rang à considérer avec réserve'}
+  else if(nB>=1){g='B';gl='Exploitable — score fiable, mais '+nB+' donnée'+(nB>1?'s':'')+' de faisabilité manquante ou incomplète'+(nB>1?'s':'')}
+  else{g='A';gl='Fiable — classement, phasage et faisabilité exploitables'}
+  return{
+    pct:pct,blk:blk,g:g,gl:gl,nA:nA,nB:nB,fields:F,
+    miss:F.filter(function(f){return f.c===0}).map(function(f){return f.lbl}),
+    part:F.filter(function(f){return f.c>0&&f.c<1}).map(function(f){return f.lbl+(f.why?' — '+f.why:'')}),
+    na:ALL.filter(function(f){return f.na}).map(function(f){return f.lbl+(f.naWhy?' ('+f.naWhy+')':'')})}}
+
+function compl(s){return cplDetail(s).pct}
+function cplGrade(s){return cplDetail(s).g}
+
+/* Infobulle détaillée : ce qui manque, nommément → liste de collecte */
+function cplTip(d){
+  return[d.pct+' % de complétude — Fiabilité '+d.g+' : '+d.gl,
+    '— — —',
+    'Indicateurs '+d.blk.A+' % (poids 50) · Faisabilité '+d.blk.B+' % (poids 40) · Pilotage '+d.blk.C+' % (poids 10)',
+    d.miss.length?'MANQUE : '+d.miss.join(' · '):'Aucun champ manquant',
+    d.part.length?'À VÉRIFIER : '+d.part.join(' · '):'',
+    d.na.length?'SANS OBJET : '+d.na.join(' · '):'']
+    .filter(Boolean).map(_cplEsc).join('&#10;')}
+
+function complBg(s){
+  const d=cplDetail(s),G=CPL_GRADE[d.g];
+  return'<span title="'+cplTip(d)+'" style="font-size:.7rem;font-weight:700;color:'+G.c+';cursor:help;white-space:nowrap">'+d.pct+'%&nbsp;'+G.i+'</span>'}
+
+/* Badge de fiabilité seul (lettre + libellé au survol) */
+function cplGradeBg(s){
+  const d=cplDetail(s),G=CPL_GRADE[d.g];
+  return'<span class="bg" title="'+_cplEsc(d.gl)+'" style="background:'+G.c+'">'+d.g+'</span>'}
 function patMalus(pat){if(!pat)return 0;if(pat.includes('Classé'))return -50;if(pat.includes('Zone protégée')||pat.includes('Zone prot'))return -40;if(pat.includes('Inventaire'))return -30;if(pat.includes('Ensembles'))return -20;if(pat.includes('Objets')||pat.includes("intérêt"))return -10;return 0}
 function feasib(s){let f=cecbInfo(s).pts;if(s.hsub&&s.hsub.length>3&&!/rien|maintien/i.test(s.hsub))f+=33;if(s.invVB&&s.invVB>0)f+=34;f+=patMalus(s.pat);return Math.max(0,Math.min(100,f))}
 function feasibBreak(s){const d=cecbInfo(s);let f=d.pts,parts=['CECB '+cecbBg(s)+' <b>+'+d.pts+'</b>'];
@@ -1079,16 +1192,55 @@ $('alCount').textContent=al.length?'('+al.length+')':'';
 if(!al.length){$('alList').innerHTML='<p style="color:#27ae60;font-size:.78rem">✅ Aucune anomalie détectée.</p>';return}
 $('alList').innerHTML=al.map(a=>'<div class="alert-card al-'+(a.t==='err'?'err':'warn')+'"><span>'+(a.t==='err'?'🔴':'🟠')+'</span><div><b>'+a.s.id+'</b> '+a.s.nom.substring(0,30)+' — '+a.m+'</div></div>').join('')}
 
+function _cpBar(lbl,p,lw,tip){
+const c=p>=80?'#27ae60':p>=50?'#e67e22':'#e74c3c';
+return'<div style="display:grid;grid-template-columns:'+lw+'px 1fr 44px;align-items:center;gap:8px;margin-bottom:5px"'+(tip?' title="'+_cplEsc(tip)+'"':'')+'><span style="font-size:.72rem;font-weight:600">'+lbl+'</span><div class="sb" style="height:14px"><div class="sf" style="width:'+p+'%;background:'+c+'"></div></div><span style="font-size:.73rem;font-weight:700;color:'+c+'">'+p+'%</span></div>'}
+
 function renCompleteness(all){
-const el=$('cpList');if(!el)return;const n=all.length||1;
-const fields=[['📐 SRE',s=>!!s.sre],['🔥 IDC',s=>!!s.idcC],['♨️ Chauffage',s=>!!(s.ht&&s.ht.length>1)],['🏚️ Coeff Stratus',s=>s.coeff!=null],['💰 Investissement',s=>!!(s.invVB&&s.invVB>0)],['🔄 Substitution',s=>!!(s.hsub&&s.hsub.length>2&&!/rien|maintien/i.test(s.hsub))],['🏛️ Patrimoine',s=>!!(s.pat&&s.pat.length>1)],['⚡ Électricité',s=>!!s.elec],['💧 Eau',s=>!!s.eau]];
-let tot=0,h='';
-fields.forEach(f=>{const p=Math.round(all.filter(f[1]).length/n*100);tot+=p;const col=p>=80?'#27ae60':p>=50?'#e67e22':'#e74c3c';
-h+='<div style="display:grid;grid-template-columns:150px 1fr 44px;align-items:center;gap:8px;margin-bottom:5px"><span style="font-size:.73rem;font-weight:600">'+f[0]+'</span><div class="sb" style="height:14px"><div class="sf" style="width:'+p+'%;background:'+col+'"></div></div><span style="font-size:.73rem;font-weight:700;color:'+col+'">'+p+'%</span></div>'});
-const avg=Math.round(tot/fields.length);const cp=$('cpPct');if(cp)cp.textContent='(moyenne : '+avg+'%)';
-const worst=all.map(s=>({s:s,p:compl(s)})).filter(x=>x.p<50).sort((a,b)=>a.p-b.p).slice(0,10);
-if(worst.length){h+='<div style="margin-top:10px;font-size:.75rem;font-weight:600;color:var(--pri)">🔴 Sites les moins documentés (&lt;50%) — priorité de collecte :</div>'+worst.map(x=>'<div style="font-size:.72rem;padding:2px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between"><span><b>'+x.s.id+'</b> '+x.s.nom.substring(0,32)+'</span><span style="color:#e74c3c;font-weight:700">'+x.p+'%</span></div>').join('')}
-else h+='<p style="font-size:.73rem;color:#27ae60;margin-top:8px">✅ Aucun site sous 50 % de complétude.</p>';
+const el=$('cpList');if(!el)return;
+const n=all.length||1;
+const D=all.map(function(s){return cplDetail(s)});
+const avg=Math.round(D.reduce(function(a,d){return a+d.pct},0)/n);
+const cp=$('cpPct');if(cp)cp.textContent='(moyenne pondérée : '+avg+'% · Indicateurs 50 / Faisabilité 40 / Pilotage 10)';
+
+/* 1. Répartition des sites par indice de fiabilité du classement */
+const gc={A:0,B:0,C:0,D:0};D.forEach(function(d){gc[d.g]++});
+let h='<div style="font-size:.75rem;font-weight:600;color:var(--pri);margin-bottom:5px">Fiabilité du classement <span style="font-weight:400;font-size:.66rem;color:#888">(un site en 🔴 D ne devrait pas être classé en l’état)</span></div>';
+h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">';
+['A','B','C','D'].forEach(function(k){const G=CPL_GRADE[k];
+ h+='<div style="text-align:center;padding:6px 4px;border-radius:6px;background:#f7f9fa;border-top:3px solid '+G.c+'"><div style="font-size:1.1rem;font-weight:800;color:'+G.c+'">'+gc[k]+'</div><div style="font-size:.62rem;color:#555">'+G.i+' '+k+' — '+G.n+'</div></div>'});
+h+='</div>';
+
+/* 2. Moyenne par bloc */
+h+='<div style="font-size:.75rem;font-weight:600;color:var(--pri);margin-bottom:4px">Moyenne par bloc</div>';
+[['A','🎯 Indicateurs (50 %)','Données qui alimentent les 6 sous-scores : SRE, IDC, énergie, vétusté, élec, eau, CO₂'],
+ ['B','🛠️ Faisabilité (40 %)','Données qui permettent de décider et de phaser : CECB+, IDC projeté, substitution, budget, patrimoine'],
+ ['C','📁 Pilotage (10 %)','Données qui permettent de mener le projet : responsables, état SIA, type d’intervention, localisation']]
+.forEach(function(b){
+ const p=Math.round(D.reduce(function(a,d){return a+(d.blk[b[0]]||0)},0)/n);
+ h+=_cpBar(b[1],p,178,b[2])});
+
+/* 3. Détail champ par champ (crédit moyen, plausibilité incluse) */
+const agg={},order=[];
+D.forEach(function(d){d.fields.forEach(function(f){
+ const k=f.b+'|'+f.lbl;
+ if(!agg[k]){agg[k]={s:0,n:0,b:f.b,lbl:f.lbl,w:f.w,bq:f.bq};order.push(k)}
+ agg[k].s+=f.c;agg[k].n++})});
+h+='<div style="font-size:.75rem;font-weight:600;color:var(--pri);margin:12px 0 4px">Détail par champ <span style="font-weight:400;font-size:.66rem;color:#888">(× = poids dans le bloc · ⛔ = champ bloquant · les champs sans objet sont exclus du calcul)</span></div>';
+order.forEach(function(k){const a=agg[k];const p=Math.round(a.s/a.n*100);
+ const lbl='<span style="color:#94a3b8;font-weight:700">'+a.b+'</span> '+a.lbl+' <span style="color:#aaa;font-size:.62rem">×'+a.w+'</span>'+(a.bq?' <span style="font-size:.6rem" title="Champ bloquant">⛔</span>':'');
+ h+=_cpBar(lbl,p,205,'Crédit moyen sur '+a.n+' site'+(a.n>1?'s':'')+' concerné'+(a.n>1?'s':'')+' — un champ présent mais implausible ne compte qu’à moitié')});
+
+/* 4. Sites prioritaires pour la collecte */
+const worst=all.map(function(s,i){return{s:s,d:D[i]}})
+ .filter(function(x){return x.d.g==='D'||x.d.g==='C'||x.d.pct<55})
+ .sort(function(a,b){const o={D:0,C:1,B:2,A:3};return(o[a.d.g]-o[b.d.g])||(a.d.pct-b.d.pct)}).slice(0,12);
+if(worst.length){
+ h+='<div style="margin-top:12px;font-size:.75rem;font-weight:600;color:var(--pri)">🔴 Priorité de collecte <span style="font-weight:400;font-size:.66rem;color:#888">(fiabilité C/D ou complétude &lt; 55 % — survolez pour la liste des champs manquants)</span></div>';
+ h+=worst.map(function(x){const G=CPL_GRADE[x.d.g];
+  return'<div title="'+cplTip(x.d)+'" style="font-size:.72rem;padding:3px 0;border-bottom:1px solid #f0f0f0;display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;cursor:help"><span><b>'+x.s.id+'</b> '+String(x.s.nom||'').substring(0,30)+'<br><span style="color:#888;font-size:.64rem">manque : '+(x.d.miss.length?x.d.miss.join(' · '):'—')+'</span></span><span class="bg" style="background:'+G.c+'">'+x.d.g+'</span><span style="font-weight:700;color:'+G.c+';min-width:34px;text-align:right">'+x.d.pct+'%</span></div>'}).join('')}
+else h+='<p style="font-size:.73rem;color:#27ae60;margin-top:10px">✅ Aucun site en fiabilité C/D ni sous 55 % de complétude.</p>';
+
 el.innerHTML=h}
 
 
@@ -1125,7 +1277,7 @@ if(sites.length<2){$('gCmpRadar').innerHTML='<p style="color:#888;font-size:.75r
 $('cmpB').classList.add('op');$('cmpCh').classList.add('op');
 const traces=sites.map((s,i)=>{const sc=score(s);return{type:'scatterpolar',r:[sc.sub.c,sc.sub.o,sc.sub.i,sc.sub.e,sc.sub.a,sc.sub.v],theta:['CEE','CO₂','IDC','Élec','Eau','Vétusté'],fill:'toself',fillcolor:i===0?'rgba(45,106,159,0.15)':'rgba(231,76,60,0.15)',line:{color:cols[i],width:2},name:s.id+' '+s.nom.substring(0,18)}});
 try{Plotly.newPlot('gCmpRadar',traces,{polar:{radialaxis:{range:[0,100],tickfont:{size:8},gridcolor:'#e2e8f0'},angularaxis:{tickfont:{size:9}}},margin:{t:30,b:40,l:60,r:60},paper_bgcolor:'transparent',font:{size:9},legend:{orientation:'h',font:{size:9}}},{responsive:true,displayModeBar:false})}catch(e){}
-const rows=[['Score global',s=>score(s).t],['Phase',s=>'P'+score(s).ph],['Type intervention',s=>'T'+score(s).ti+' — '+(TI_LABELS[score(s).ti]||'')],['Faisabilité',s=>feasib(s)+'/100'],['IDC',s=>s.idcC||'—'],['SRE',s=>fmtSRE(s.sre)],['Chauffage',s=>s.ht||'—'],['Substitution',s=>s.hsub||'—'],['Invest',s=>fmtInv(s.invVB)],['Complétude',s=>compl(s)+'%']];
+const rows=[['Score global',s=>score(s).t],['Phase',s=>'P'+score(s).ph],['Type intervention',s=>'T'+score(s).ti+' — '+(TI_LABELS[score(s).ti]||'')],['Faisabilité',s=>feasib(s)+'/100'],['IDC',s=>s.idcC||'—'],['SRE',s=>fmtSRE(s.sre)],['Chauffage',s=>s.ht||'—'],['Substitution',s=>s.hsub||'—'],['Invest',s=>fmtInv(s.invVB)],['Complétude',s=>{const d=cplDetail(s);return d.pct+'% · fiabilité '+d.g}]];
 let h='<table style="margin-top:8px"><thead><tr><th>Indicateur</th>'+sites.map((s,i)=>'<th style="background:'+cols[i]+'">'+s.id+'</th>').join('')+'</tr></thead><tbody>';
 rows.forEach(r=>{h+='<tr><td><b>'+r[0]+'</b></td>'+sites.map(s=>'<td>'+r[1](s)+'</td>').join('')+'</tr>'});
 h+='</tbody></table>';
@@ -1158,11 +1310,11 @@ document.querySelectorAll('tr.row-expanded').forEach(r=>r.classList.remove('row-
 if(prevId===id)return;
 expandedRow=id;
 const site=S.find(s=>s.id===id);if(!site)return;
-const sc=score(site);const cp=compl(site);const fb=feasibBreak(site);
+const sc=score(site);const cpd=cplDetail(site);const cp=cpd.pct;const fb=feasibBreak(site);
 const row=document.querySelector('tr[data-id="'+id+'"]');if(!row)return;
 row.classList.add('row-expanded');
 const det=document.createElement('tr');det.id='detRow';
-det.innerHTML='<td colspan="17" class="detail-td"><div style="display:grid;grid-template-columns:230px 1fr;gap:14px"><div id="detRadar" style="height:240px;min-width:200px"></div><div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"><div style="text-align:center;background:#eaf2f8;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#1a5276">'+Math.round(sc.sub.c)+'</div><div style="font-size:.62rem;color:#555">CEE</div></div><div style="text-align:center;background:#fdecea;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#c0392b">'+Math.round(sc.sub.o)+'</div><div style="font-size:.62rem;color:#555">CO₂</div></div><div style="text-align:center;background:#fef5e7;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#e67e22">'+Math.round(sc.sub.i)+'</div><div style="font-size:.62rem;color:#555">IDC</div></div><div style="text-align:center;background:#f4ecf7;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#7d3c98">'+Math.round(sc.sub.e)+'</div><div style="font-size:.62rem;color:#555">Élec</div></div><div style="text-align:center;background:#eafaf1;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#1e8449">'+Math.round(sc.sub.a)+'</div><div style="font-size:.62rem;color:#555">Eau</div></div><div style="text-align:center;background:#f2f3f4;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#7f8c8d">'+Math.round(sc.sub.v)+'</div><div style="font-size:.62rem;color:#555">Vétusté</div></div></div><div style="display:flex;gap:10px;font-size:.73rem;margin-bottom:6px;flex-wrap:wrap"><span>📊 Complétude : <b>'+cp+'%</b> '+(cp>=80?'🟢':cp>=50?'🟡':'🔴')+'</span><span>📋 CECB+ : '+cecbBg(site)+'</span><span>🏗 État : <b>'+(site.etat||'—')+'</b></span><span>🎯 Faisabilité : <b>'+fb.score+'</b>/100 <span style="font-size:.63rem;color:#888">('+fb.detail+')</span></span></div><div style="display:flex;gap:10px;font-size:.73rem;margin-bottom:8px;flex-wrap:wrap;align-items:center"><span>🔧 Intervention : '+tiBg(sc.ti)+' <span style="color:#555;font-size:.68rem">'+(TI_LABELS[sc.ti]||'')+'</span></span><button class="bt bt-p bt-s" onclick="event.stopPropagation();addCompare(\''+id+'\')">⚖️ Comparer</button></div><div style="font-size:.75rem;margin-bottom:4px;font-weight:600;color:var(--pri)">📝 Notes / Commentaires :</div><textarea id="noteTA" placeholder="Note conservée lors des mises à jour du fichier de données — exportable séparément via « 📝 Notes »" onblur="saveNote(\''+id+'\')" style="width:100%;height:60px;border:1px solid #cbd5e0;border-radius:6px;padding:6px;font-size:.76rem;resize:vertical">'+(siteNotes[id]||'')+'</textarea></div></div></td>';
+det.innerHTML='<td colspan="17" class="detail-td"><div style="display:grid;grid-template-columns:230px 1fr;gap:14px"><div id="detRadar" style="height:240px;min-width:200px"></div><div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"><div style="text-align:center;background:#eaf2f8;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#1a5276">'+Math.round(sc.sub.c)+'</div><div style="font-size:.62rem;color:#555">CEE</div></div><div style="text-align:center;background:#fdecea;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#c0392b">'+Math.round(sc.sub.o)+'</div><div style="font-size:.62rem;color:#555">CO₂</div></div><div style="text-align:center;background:#fef5e7;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#e67e22">'+Math.round(sc.sub.i)+'</div><div style="font-size:.62rem;color:#555">IDC</div></div><div style="text-align:center;background:#f4ecf7;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#7d3c98">'+Math.round(sc.sub.e)+'</div><div style="font-size:.62rem;color:#555">Élec</div></div><div style="text-align:center;background:#eafaf1;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#1e8449">'+Math.round(sc.sub.a)+'</div><div style="font-size:.62rem;color:#555">Eau</div></div><div style="text-align:center;background:#f2f3f4;padding:6px;border-radius:6px"><div style="font-size:1rem;font-weight:800;color:#7f8c8d">'+Math.round(sc.sub.v)+'</div><div style="font-size:.62rem;color:#555">Vétusté</div></div></div><div style="display:flex;gap:10px;font-size:.73rem;margin-bottom:6px;flex-wrap:wrap"><span title=\''+cplTip(cpd)+'\'>📊 Complétude : <b>'+cp+'%</b> <span class="bg" style="background:'+CPL_GRADE[cpd.g].c+'">'+CPL_GRADE[cpd.g].i+' '+cpd.g+' — '+CPL_GRADE[cpd.g].n+'</span></span><span style="font-size:.67rem;color:#666">A '+cpd.blk.A+'% · B '+cpd.blk.B+'% · C '+cpd.blk.C+'%</span><span>📋 CECB+ : '+cecbBg(site)+'</span><span>🏗 État : <b>'+(site.etat||'—')+'</b></span><span>🎯 Faisabilité : <b>'+fb.score+'</b>/100 <span style="font-size:.63rem;color:#888">('+fb.detail+')</span></span></div><div style="display:flex;gap:10px;font-size:.73rem;margin-bottom:8px;flex-wrap:wrap;align-items:center"><span>🔧 Intervention : '+tiBg(sc.ti)+' <span style="color:#555;font-size:.68rem">'+(TI_LABELS[sc.ti]||'')+'</span></span><button class="bt bt-p bt-s" onclick="event.stopPropagation();addCompare(\''+id+'\')">⚖️ Comparer</button></div>'+(cpd.miss.length||cpd.part.length?'<div style="font-size:.7rem;background:#fdf6ec;border-left:3px solid #e67e22;padding:5px 8px;border-radius:4px;margin-bottom:8px">'+(cpd.miss.length?'<b>À collecter :</b> '+cpd.miss.join(' · '):'')+(cpd.miss.length&&cpd.part.length?'<br>':'')+(cpd.part.length?'<b>À vérifier :</b> '+cpd.part.join(' · '):'')+'</div>':'')+'<div style="font-size:.75rem;margin-bottom:4px;font-weight:600;color:var(--pri)">📝 Notes / Commentaires :</div><textarea id="noteTA" placeholder="Note conservée lors des mises à jour du fichier de données — exportable séparément via « 📝 Notes »" onblur="saveNote(\''+id+'\')" style="width:100%;height:60px;border:1px solid #cbd5e0;border-radius:6px;padding:6px;font-size:.76rem;resize:vertical">'+(siteNotes[id]||'')+'</textarea></div></div></td>';
 row.after(det);
 setTimeout(()=>{try{Plotly.newPlot('detRadar',[{type:'scatterpolar',r:[sc.sub.c,sc.sub.o,sc.sub.i,sc.sub.e,sc.sub.a,sc.sub.v],theta:['CEE','CO₂','IDC','Élec','Eau','Vétusté'],fill:'toself',fillcolor:'rgba(45,106,159,0.2)',line:{color:'#2d6a9f',width:2},marker:{size:5}}],{polar:{radialaxis:{range:[0,100],tickfont:{size:8},gridcolor:'#e2e8f0'},angularaxis:{tickfont:{size:9}}},margin:{t:30,b:20,l:50,r:50},paper_bgcolor:'transparent',showlegend:false,font:{size:9}},{responsive:true,displayModeBar:false})}catch(e){}},100)}
 
